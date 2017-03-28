@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
 	size = -1
 	parser.add_argument("-f", "--file", type=str, help="The file from which we read the puzzle.")
-	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. (Not used if a filename is specified).")
+	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. Size must be > 3 and <= 7 (Not used if a filename is specified).")
 
 	args = parser.parse_args()
 	puzzle = []
@@ -52,6 +52,8 @@ if __name__ == "__main__":
 	if args.file == None and args.size == None:
 		leave('Must specify a filename or at least a size to generate a random puzzle.')
 	elif args.file == None and args.size != None:
+		if args.size < 3 or args.size > 7:
+			leave('Invalid size for the random generated puzzle.')
 		size = args.size
 		puzzle = gen_puzzle(size, random.choice([True, False]))
 		nb_spaces = len(str(size * size - 1))
