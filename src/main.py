@@ -47,17 +47,17 @@ if __name__ == "__main__":
 	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. (Not used if a filename is specified).")
 
 	args = parser.parse_args()
-	array = []
+	puzzle = []
 
 	if args.file == None and args.size == None:
 		leave('Must specify a filename or at least a size to generate a random puzzle.')
 	elif args.file == None and args.size != None:
 		size = args.size
-		array = gen_puzzle(size, random.choice([True, False]))
+		puzzle = gen_puzzle(size, random.choice([True, False]))
 		nb_spaces = len(str(size * size - 1))
 		
 		print 'Puzzle generated :'
-		for idx, value in enumerate(array):
+		for idx, value in enumerate(puzzle):
 			if idx % size == 0 and idx != 0:
 				print ''
 			print value,
@@ -93,18 +93,18 @@ if __name__ == "__main__":
 							leave('Line with the wrong format in file.')
 
 						'''Means we have reached the maximum number of line and we want to add another'''
-						if len(array) == size*size:
+						if len(puzzle) == size*size:
 							leave('Too many lines for the puzzle.')
 	
 						for item in [int(item) for item in split]:
-							if item in array:
+							if item in puzzle:
 								leave('Same number appears multiple times.')
 							elif item < 0 or item >= size*size:
 								leave('Number out of range of the given size.')
-							array.append(item)
+							puzzle.append(item)
 	
-		if size == -1 or (size != -1 and len(array) != size*size):
+		if size == -1 or (size != -1 and len(puzzle) != size*size):
 			leave('Missing informations in file.')
-	if is_solvable(array) == False:
+	if is_solvable(puzzle) == False:
 		leave('This puzzle can\'t be solved.')
-	#penis.solve(size, array, array.index(0))
+	#penis.solve(size, puzzle, puzzle.index(0))
