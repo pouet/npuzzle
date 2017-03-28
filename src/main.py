@@ -1,4 +1,9 @@
-import random
+import sys, random, os.path
+#import penis
+
+def leave(message):
+	print message
+	exit()
 
 def get_free_places(array):
 	arr = []
@@ -19,13 +24,12 @@ def is_solvable(array):
 		return True
 	return False
 
-def gen_puzzle(size, solvable):
-	random.seed()
+def gen_puzzle(size):
 	size = size + 1
 	arr = [0] * size
 	for i in range(1, size):
 		arr[random.choice(get_free_places(arr))] = i
-	if is_solvable(arr) != solvable:
+	if is_solvable(arr) != True:
 		length = len(arr)
 		for index, value in enumerate(arr):
 			if index < length - 1 and arr[index] != 0 and arr[index + 1] != 0:
@@ -34,3 +38,17 @@ def gen_puzzle(size, solvable):
 				arr[index + 1] = tmp
 				break
 	return arr
+
+array = []
+size = 0
+length_args = len(sys.argv)
+if length_args > 2:
+	leave('Too many arguments')
+elif length_args == 1:
+	size = random.randint(3, 15)
+	array = gen_puzzle(size)
+else:
+	'''Filename in arguments'''
+	if os.path.isfile(sys.argv[1]) == False:
+		leave('Invalid filename in argument.')
+#penis.solve(size, array, array.index(0))
