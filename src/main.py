@@ -1,4 +1,4 @@
-import sys, random, os.path
+import random, os.path, argparse
 #import penis
 
 def leave(message):
@@ -39,66 +39,72 @@ def gen_puzzle(size, solvable):
 				break
 	return arr
 
-array = []
-size = -1
-length_args = len(sys.argv)
-if length_args > 2:
-	leave('Too many arguments.')
-elif length_args == 1:
-	size = random.randint(3, 15)
-	array = gen_puzzle(size, random.choice([True, False]))
-	nb_spaces = len(str(size*size - 1))
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
+
+	size = -1
+	parser.add_argument("-f", "--file", type=str, help="The file from which we read the puzzle.")
+	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. (Not used if a filename is specified).")
+
+	args = parser.parse_args()
+	array = []
+
+	if args.file == None and args.size == None:
+		leave('Must specify a filename or at least a size to generate a random puzzle.')
+	elif args.file == None and args.size != None:
+		size = args.size
+		array = gen_puzzle(size, random.choice([True, False]))
+		nb_spaces = len(str(size * size - 1))
+		
+		print 'Puzzle generated :'
+		for idx, value in enumerate(array):
+			if idx % size == 0 and idx != 0:
+				print ''
+			print value,
+			nb = nb_spaces - len(str(value))
+			print ' ' * nb,
+		print
+		print
+	else:
+		if os.path.isfile(args.file) == False:
+			leave('Invalid filename in argument.')
+		with open(args.file, 'r') as f:
+			for line in f:
+				pos = line.find('#')
+				if pos != -1:
+					line = line[:pos]
+				line = line.strip()
 	
-	print 'Puzzle generated :'
-	for idx, value in enumerate(array):
-		if idx % size == 0 and idx != 0:
-			print ''
-		print value,
-		nb = nb_spaces - len(str(value))
-		print ' ' * nb,
-	print
-	print
-else:
-	'''Filename in arguments'''
-	if os.path.isfile(sys.argv[1]) == False:
-		leave('Invalid filename in argument.')
-	with open(sys.argv[1], 'r') as f:
-		for line in f:
-			pos = line.find('#')
-			if pos != -1:
-				line = line[:pos]
-			line = line.strip()
+				if len(line) > 0:
+					if size == -1 and line.isdigit() == False:
+						leave('Missing size of the puzzle.')
+					elif size == -1 and line.isdigit() == True:
+						size = int(line)
+						if size <= 0:
+							leave('Invalid size.')
+					elif size != -1:
+						'''Remove empty elements'''
+						split = filter(None, line.split(" "))
+						if len(split) != size:
+							leave('Line with the wrong format in file.')
+	
+						'''Filter only numbers - Allow us to see unwanted characters.'''
+						if len([item for item in split if item.isdigit()]) != size:
+							leave('Line with the wrong format in file.')
 
-			if len(line) > 0:
-				if size == -1 and line.isdigit() == False:
-					leave('Missing size of the puzzle.')
-				elif size == -1 and line.isdigit() == True:
-					size = int(line)
-					if size <= 0:
-						leave('Invalid size.')
-				elif size != -1:
-					'''Remove empty elements'''
-					split = filter(None, line.split(" "))
-					if len(split) != size:
-						leave('Line with the wrong format in file.')
-
-					'''Filter only numbers - Allow us to see format errors.'''
-					if len([item for item in split if item.isdigit()]) != size:
-						leave('Line with the wrong format in file.')
-					if len(array) == size*size:
-						leave('Too many lines for the puzzle.')
-
-					for item in [int(item) for item in split]:
-						if item in array:
-							leave('Same number appears multiple times.')
-						elif item < 0 or item >= size*size:
-							leave('Number out of range of the given size.')
-						array.append(item)
-
-	if size == -1 or (size != -1 and len(array) != size*size):
-		leave('Missing informations in file.')
-if is_solvable(array) == False:
-	leave('This puzzle can\'t be solved.')
-#print size
-#print array
-#penis.solve(size, array, array.index(0))
+						'''Means we have reached the maximum number of line and we want to add another'''
+						if len(array) == size*size:
+							leave('Too many lines for the puzzle.')
+	
+						for item in [int(item) for item in split]:
+							if item in array:
+								leave('Same number appears multiple times.')
+							elif item < 0 or item >= size*size:
+								leave('Number out of range of the given size.')
+							array.append(item)
+	
+		if size == -1 or (size != -1 and len(array) != size*size):
+			leave('Missing informations in file.')
+	if is_solvable(array) == False:
+		leave('This puzzle can\'t be solved.')
+	#penis.solve(size, array, array.index(0))
