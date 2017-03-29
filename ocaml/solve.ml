@@ -5,14 +5,17 @@ open Printf
  * The module MUST be mutable
 *)
 
+(*
 module type PQUEUE =
 sig
     type 'a t
     val create : unit -> 'a t
     val is_empty : 'a t -> bool
 end
+*)
 
-module Pqueue : PQUEUE =
+(* module Pqueue : PQUEUE = *)
+module Pqueue =
 struct
     exception Pqueue_empty
 
@@ -153,16 +156,19 @@ module SolverPqueue = Pqueue (struct type t = node end)
 
 let solve grid =
     let current = get_empty_case grid
-    and opened = ref Pqueue.create
-    and closed = ref Pqueue.create
+    and opened = Pqueue.create ()
+    and closed = Pqueue.create ()
     in
 
+(*
     let rec une_step current opened closed =
-        let opened = { opened with tamer = 0 } in
+        let opened = { opened with f = 0 } in
         if c fini then
             closed
         else
             une_step current opened closed
+    in
+*)
 
     let start = {
         grid    = grid;
@@ -175,9 +181,10 @@ let solve grid =
     in
 
 
-    opened := Pqueue.push 0 start !opened;
+    let opened = Pqueue.push 0 start opened
+    in
 
-    let ok, opened = Pqueue.pop !opened
+    let ok, opened = Pqueue.pop opened
     in
 
     printf "%d\n" (fst ok.parent);
@@ -185,8 +192,9 @@ let solve grid =
     let neigh = get_neighbors grid current
     in
 
-    List.iter (fun (a, b) -> printf "|> %d %d\n" a b) neigh;
+    List.iter (fun (a, b) -> printf "|> %d %d\n" a b) neigh
 
+(*
     while Pqueue.is_empty !opened = false do
 (*
         let rec iter_neighbors =
@@ -210,6 +218,7 @@ let solve grid =
 *)
         closed := Pqueue.push tmp.h tmp !closed
     done
+*)
 
 (*
     let rec loop opened closed pt = 
