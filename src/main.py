@@ -1,5 +1,6 @@
 import random, os.path, argparse
 #import penis
+from graphique import *
 
 def leave(message):
 	print message
@@ -130,4 +131,5 @@ if __name__ == "__main__":
 	print_puzzle(puzzle, size)
 	if is_solvable(puzzle) == False:
 		leave('This puzzle can\'t be solved.')
+	main(size, puzzle)
 	#penis.solve(size, puzzle, puzzle.index(0))
