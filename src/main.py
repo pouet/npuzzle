@@ -131,5 +131,5 @@ if __name__ == "__main__":
 	print_puzzle(puzzle, size)
 	if is_solvable(puzzle) == False:
 		leave('This puzzle can\'t be solved.')
-	main(size, puzzle)
+	game = Game(puzzle, size)
 	#penis.solve(size, puzzle, puzzle.index(0))
