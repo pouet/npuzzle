@@ -116,15 +116,14 @@ if __name__ == "__main__":
 						leave('Missing size of the puzzle.')
 					elif size == -1 and line.isdigit() == True:
 						size = int(line)
-						if size <= 0:
+						if size <= 2:
 							leave('Invalid size.')
 					elif size != -1:
 						split = check_line_size(line, size)
-
 						'''Means we have reached the maximum number of line and we want to add another'''
 						if len(puzzle) == size*size:
 							leave('Too many lines for the puzzle.')
-						puzzle =add_line_to_puzzle(split, puzzle, size)
+						puzzle = add_line_to_puzzle(split, puzzle, size)
 
 		if size == -1 or (size != -1 and len(puzzle) != size*size):
 			leave('Missing informations in file.')
