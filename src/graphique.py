@@ -18,7 +18,7 @@ class Game:
 		self.fenetre.title("N-Puzzle")
 		
 		size_canevas = size * TAILLE_TILE
-		size_window_h = (size * TAILLE_TILE + (3 * TAILLE_TILE)) + 1
+		size_window_h = (size * TAILLE_TILE + (1 * TAILLE_TILE)) + 1
 		size_window_w = size * TAILLE_TILE + 1
 
 		self.fenetre.resizable(0, 0)
@@ -27,7 +27,7 @@ class Game:
 		self.button_solve_size_w = TAILLE_TILE * (size / 2)
 		self.button_solve_size_h = TAILLE_TILE
 
-		self.canevas = Canvas(self.fenetre, width=size_canevas, relief=RAISED, height=size_canevas, bg='white', bd=1, highlightthickness=0)
+		self.canevas = Canvas(self.fenetre, width=size_canevas, height=size_canevas, bg='white', bd=1, highlightthickness=0)
 		for i in range(0, size + 1):
 			self.canevas.create_line(i * TAILLE_TILE,  0, i * TAILLE_TILE, size_canevas)
 			self.canevas.create_line(0, i * TAILLE_TILE , size_canevas, i * TAILLE_TILE)
@@ -40,7 +40,7 @@ class Game:
 				tmp.append(self.canevas.create_text(((j + 1) * TAILLE_TILE) - (TAILLE_TILE / 2), ((i + 1) * TAILLE_TILE) - (TAILLE_TILE / 2), text=text, width=TAILLE_TILE/2))
 			self.texts_canvas.append(tmp)
 
-		self.button_frame = Frame(self.fenetre)
+		self.button_frame = Frame(self.fenetre, highlightthickness=0)
 	
 		self.button_find_solution = Button(self.button_frame, text='Find solution', command=self.find_solution, highlightthickness=0)
 		self.button_find_solution.pack(side=LEFT, padx=5, pady=0)
@@ -48,14 +48,14 @@ class Game:
 		self.button_display_solution = Button(self.button_frame, text='Display solution', command=self.display_solution, highlightthickness=0)
 		self.button_display_solution.pack(side=RIGHT, padx=5, pady=0)
 
-		self.button_frame.pack(side=BOTTOM, fill=BOTH, expand=True, padx=0, pady=0)
+		self.button_frame.pack(side=BOTTOM, fill=BOTH, padx=0, pady=5)
 		self.fenetre.bind('<Left>', self.left_move)
 		self.fenetre.bind('<Right>', self.right_move)
 		self.fenetre.bind('<Up>', self.up_move)
 		self.fenetre.bind('<Down>', self.down_move)
 		self.fenetre.bind('q', self.quit)
 
-		self.canevas.pack(fill=BOTH, expand=True, padx=0, pady=0, ipadx=0, ipady=0)
+		self.canevas.pack(side=TOP, fill=BOTH, padx=0, pady=0, ipadx=0, ipady=0)
 
 		self.fenetre.mainloop()
 		self.fenetre.destroy()
