@@ -5,7 +5,19 @@ open Printf
 *)
 module Pqueue =
 struct
-    module PrioMap = Map.Make (struct type t = int let compare = compare end)
+    module PrioMap = Map.Make (struct
+        (* grid * (line * col) * priority *)
+        type t =  int array * (int * int) * int
+
+        let compare (ag, _, app) (bg, _, bpp) =
+            if app < bpp then -1
+            else if app > bpp then 1
+            else begin
+                if ag < bg then -1
+                else if ag > bg then 1
+                else 0
+            end
+    end)
 
     type t = PrioMap.key
 
@@ -25,17 +37,12 @@ struct
         min, key, PrioMap.remove key t
 end
 
-
-
 type point = int * int
 
 type node = {
     grid        : int array;
-    parent      : int * int;
-    pos         : int * int;
-    mutable f   : int;
-    mutable g   : int;
-    mutable h   : int;
+    pos         : point;
+    prio        : int;
 }
 
 exception InvalidGridSize
@@ -91,12 +98,25 @@ let play_move grid (line, col) (movl, movc) =
 
 let undo_move = play_move
 
+
+
 let h_manhattan (ax, ay) (bx, by) =
     abs (ax - bx) + abs (ay - by)
 
+let heuristic grid =
+    let w = grid_size grid in
+    let rec calc acc = function
+        | n when n < w      ->
+                let a = (grid.(n) / w, grid.(n) mod w)
+                and b = (n / w, n mod w) in
+                if grid.(n) = 0 then calc acc (n + 1)
+                else calc (h_manhattan a b) (n + 1)
+        | _                 -> acc
+    in
+    calc 0 0
 
 
-let get_neighbors grid pt =
+let get_neighbors grid (a, b as pt) =
     let moves = [
         (1, 0);
         (0, 1);
@@ -104,8 +124,20 @@ let get_neighbors grid pt =
         (0, -1);
     ]
     in
+    let rec aux = function
+        | []            -> []
+        | (x, y as mv) :: t   ->
+                if is_move_valid grid pt mv
+                then { prio = 0; grid = play_move grid pt mv; pos = (a + x, b + y); } :: aux t
+                else aux t
+    in
+    aux moves
+
+(*
     List.fold_left (fun acc mv -> if is_move_valid grid pt mv then
-        play_move grid pt mv :: acc else acc) [] moves
+            { grid = play_move grid pt mv; pos = pt + mv; } :: acc else acc) [] moves
+*)
+
 
 (* TODO: rajouter tailles <> 3 *)
 let is_solved grid =
@@ -113,11 +145,8 @@ let is_solved grid =
     in
     grid = grid'
 
-
-(* TODO: a implementer *)
-let move_cost grid grid' =
-    (* calculer l'heuristique + cout *)
-    1
+(* TODO: A enlever *)
+exception Finished
 
 let solve grid =
     let current = get_empty_case grid
@@ -127,46 +156,68 @@ let solve grid =
 
     let start = {
         grid    = grid;
-        parent  = (-1, -1);
         pos     = current;
-        f       = 0;
-        g       = 0;
-        h       = 0
+        prio    = 0;
     }
     in
 
-    let opened = Pqueue.push 0 start opened
+    let opened = Pqueue.push (grid, current, 0) start opened
     in
 
     let rec loop opened closed = 
         if Pqueue.is_empty opened = true then print_endline "finish"
         else begin
-            if is_solved grid then print_endline "Solved !";
+(*             if is_solved grid then print_endline "Solved !"; *)
 
-            let (current, cost, opened) = Pqueue.pop_min opened in
-            (* TODO: modifier le 0 et mettre celui de openend *)
-            let closed = Pqueue.push 0 current closed in
+            let current, key, opened = Pqueue.pop_min opened in
+(*             let closed = Pqueue.push cost current closed in *)
+
             let neigh = get_neighbors current.grid current.pos in
+
+            if is_solved current.grid then (print_endline "Solved !"; raise Finished);
 
             let rec for_each_neigh opened closed = function
                 | []        -> opened, closed
-                | h :: t    ->
-                        (* TODO: rajouter les heuristiques *)
-                        let cost = current.g in
+                | next :: t ->
+(*                         let new_cost = cost + 1 in *)
+                        for_each_neigh opened closed t
 
-                        (* exists prends un node et pas un array ! *)
 (*
-                        if Pqueue.exists h opened then begin
-                            print_endline "exists"
-                        end;
+                        if (Pqueue.exists next closed = false ||
+                            new_cost < fst (Pqueue.get next closed))
+                        then begin
+                            let closed = Pqueue.remove next closed in
+                            let closed = Pqueue.push new_cost next closed in
+                            let prio = new_cost + heuristic next.grid in
+                            let opened = Pqueue.push prio next opened in
+                            printf "%d\n" prio;
+                            for_each_neigh opened closed t
+                        end
+                        else 
+                            for_each_neigh opened closed t
 *)
 
-
-                        print_grid h;
-                        for_each_neigh opened closed t
 (*
-                        let grid' = 
-                        let cost = current.g + move_cost h.grid
+                        if Pqueue.exists next closed then begin
+                            let cost', _ = Pqueue.get next closed in
+(*                             printf "%d %d\n" new_cost cost'; *)
+                            if new_cost < cost' then begin
+                                let prio = new_cost + heuristic next.grid in
+                                let opened = Pqueue.push prio next opened in
+                                printf "%d\n" prio;
+                                for_each_neigh opened closed t
+                            end
+                            else
+                                for_each_neigh opened closed t
+                        end
+                        else begin
+(*
+                            let prio = new_cost + heuristic next.grid in
+                            let opened = Pqueue.push prio next opened in
+*)
+(*                             print_grid next.grid; *)
+                            for_each_neigh opened closed t
+                        end
 *)
             in
 
