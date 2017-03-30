@@ -1,6 +1,7 @@
 import random, os.path, argparse
 #import penis
 from graphique import *
+from time import sleep
 
 def leave(message):
 	print message
@@ -87,6 +88,7 @@ if __name__ == "__main__":
 	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. Size must be > 3 and <= 7 (Not used if a filename is specified).")
 	parser.add_argument("--solvable", action="store_true", default=False, help="Create a solvable puzzle.")
 	parser.add_argument("--unsolvable", action="store_true", default=False, help="Create an unsolvable puzzle.")
+	parser.add_argument("-g", "--graphics", action="store_true", default=False, help="Create a graphic version of the solution.")
 
 	args = parser.parse_args()
 	puzzle = []
@@ -131,5 +133,9 @@ if __name__ == "__main__":
 	print_puzzle(puzzle, size)
 	if is_solvable(puzzle) == False:
 		leave('This puzzle can\'t be solved.')
-	game = Game(puzzle, size)
 	#penis.solve(size, puzzle, puzzle.index(0))
+	'''Gather the solution from the function solve and set it in the constructor
+	@TODO'''
+	if args.graphics:
+		game = Game([0, 2, 3, 1, 4, 5, 8 , 7, 6], 3)
+		#game = Game(puzzle, size)
