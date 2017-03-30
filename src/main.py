@@ -137,5 +137,4 @@ if __name__ == "__main__":
 	'''Gather the solution from the function solve and set it in the constructor
 	@TODO'''
 	if args.graphics:
-		game = Game([0, 2, 3, 1, 4, 5, 8 , 7, 6], 3)
-		#game = Game(puzzle, size)
+		game = Game(puzzle, size)
