@@ -1,65 +1,31 @@
 open Printf
 
 (*
- * Module Pqueue handle a priority queue
- * The module MUST be mutable
+ * TODO: faire un module a part
 *)
-
-(*
-module type PQUEUE =
-sig
-    type 'a t
-    val create : unit -> 'a t
-    val is_empty : 'a t -> bool
-end
-*)
-
-(* module Pqueue : PQUEUE = *)
 module Pqueue =
 struct
-    exception Pqueue_empty
+    module PrioMap = Map.Make (struct type t = int let compare = compare end)
 
-    type 'a t = (int * 'a) list
+    type t = PrioMap.key
 
-    let create () =
-        []
+    let empty = PrioMap.empty
+    let is_empty = PrioMap.is_empty
+    let remove = PrioMap.remove
 
-    let is_empty = function
-        | []    -> true
-        | _     -> false
+    let create () = empty
 
-    let rec is_present f el = function
-        | []             -> false
-        | (_, e) :: t    ->
-                if f el e = true then true
-                else is_present f el t
+    let exists el map = PrioMap.exists (fun _ el' -> el = el') map
+    let filter el map = PrioMap.filter (fun _ el' -> el = el') map
+    let get el map = PrioMap.choose (filter el map)
 
-    let remove_if f el l =
-        let rec aux = function
-            | []                  -> []
-            | (_, e as h) :: t    ->
-                    if f el e = true then aux t
-                    else h :: aux t
-        in
-        aux l
-
-    let pop = function
-        | (_, e) :: t    -> (e, t)
-        | []        -> raise Pqueue_empty
-
-    let rec push prio el = function
-        | []                -> (prio, el) :: []
-        | (p, e as h) :: t  ->
-                if prio <= p then (prio, el) :: h :: t
-                else h :: push prio el t
-
-    let rec print f = function
-        | []              -> ()
-        | (p, e) :: t     -> begin
-                Printf.printf "%d : %s\n" p (f e);
-                print f t
-        end
+    let push = PrioMap.add
+    let pop_min t =
+        let key, min = PrioMap.min_binding t in
+        min, PrioMap.remove key t
 end
+
+
 
 type point = int * int
 
@@ -71,6 +37,9 @@ type node = {
     mutable g   : int;
     mutable h   : int;
 }
+
+
+
 
 let get_empty_case grid =
     let w = Array.length grid
@@ -103,16 +72,12 @@ let play_move grid (line, col) (movl, movc) =
         grid.(tmpl).(tmpc) <- tmp;
         )
 
-let undo_move grid src move =
-    play_move grid src move
+let undo_move = play_move
 
 let h_manhattan (ax, ay) (bx, by) =
     abs (ax - bx) + abs (ay - by)
 
-(*
- * current -> int * int | empty case
- * opened  -> 
-*)
+
 
 let get_neighbors grid (l, c as pt) =
     let moves = [|
@@ -135,40 +100,12 @@ let is_solved grid =
     in
     grid = grid'
 
-(*
-module Pqueue (Param : sig
-        type t
-    end)=
-struct
-    module PrioMap = Map.Make (struct type t = int let compare = compare end)
-
-    type t = Param.t PrioMap.t
-
-    let push = PrioMap.add
-
-    let pop_min t =
-        let key, min = PrioMap.min_binding t in
-        min, PrioMap.remove key t
-end
-
-module SolverPqueue = Pqueue (struct type t = node end)
-*)
 
 let solve grid =
     let current = get_empty_case grid
     and opened = Pqueue.create ()
     and closed = Pqueue.create ()
     in
-
-(*
-    let rec une_step current opened closed =
-        let opened = { opened with f = 0 } in
-        if c fini then
-            closed
-        else
-            une_step current opened closed
-    in
-*)
 
     let start = {
         grid    = grid;
@@ -180,100 +117,25 @@ let solve grid =
     }
     in
 
-
     let opened = Pqueue.push 0 start opened
     in
 
-    let ok, opened = Pqueue.pop opened
+    let rec loop opened closed = 
+        if Pqueue.is_empty opened = true then print_endline "finish"
+        else begin
+            let (node, opened) = Pqueue.pop_min opened in
+            if is_solved grid then print_endline "Solved !";
+            loop opened closed
+        end
     in
+    loop opened closed
 
-    printf "%d\n" (fst ok.parent);
-
-    let neigh = get_neighbors grid current
-    in
-
-    List.iter (fun (a, b) -> printf "|> %d %d\n" a b) neigh
-
-(*
-    while Pqueue.is_empty !opened = false do
 (*
         let rec iter_neighbors =
         | [] -> ()
         | h :: t ->
                 d
         in
-*)
-        let tmp, opened = Pqueue.pop !opened in
-        let neigh = get_neighbors grid tmp.pos in
-        let cmp_present el e = el.grid = e.grid && el.g < e.g
-        in
-
-        opened := Pqueue.remove_if (fun el e -> el.grid = e.grid) tmp !opened; 
-(*
-        let rec iter_neighbors = function
-        | [] -> ()
-        | h :: t ->
-                if Pqueue.is_present cmp_present start !opened = true then
-        in
-*)
-        closed := Pqueue.push tmp.h tmp !closed
-    done
-*)
-
-(*
-    let rec loop opened closed pt = 
-        if Pqueue.is_empty opened = false then begin
-            let (l, c as pt), opened = Pqueue.pop opened in
-            if is_solved grid then print_endline "Wahou !";
-            loop opened closed
-        end
-    in
-    loop opened closed;
-*)
-(*
-    let start = {
-        parent  = grid;
-        f       = 0;
-        g       = 0;
-        h       = h_manhattan (0, 0) (1, 2);
-    }
-    in
-*)
-
-(*
-    let opened = Pqueue.push 5 (21, 42) opened in
-    let opened = Pqueue.push 6 (12, 98) opened in
-    let opened = Pqueue.push 1 (0, 3) opened in
-    let opened = Pqueue.push 2 (55, 1234) opened in
-*)
-
-
-
-(*
-    Pqueue.print (fun (a, b) -> string_of_int a ^ " " ^ string_of_int b) opened;
-*)
-
-(*
-    let (n, m), opened = Pqueue.pop opened in
-    printf "%d %d\n" n m;
-
-    if Pqueue.is_empty opened then print_endline "empty"
-    else print_endline "not empty";
-    if Pqueue.is_present (fun el e -> el = e) (55, 1234) opened then print_endline "present"
-    else print_endline "not present"
-*)
-
-
-(*
-        printf "%d %d\n" (fst empty) (snd empty);
-        play_move grid empty moves.(0);
-        let empty = get_empty_case grid
-        in
-        printf "%d %d\n" (fst empty) (snd empty);
-        play_move grid empty moves.(0);
-        let empty = get_empty_case grid
-        in
-        printf "%d %d\n" (fst empty) (snd empty)
 *)
 
 let _ =
