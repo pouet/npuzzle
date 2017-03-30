@@ -1,4 +1,6 @@
 from Tkinter import *
+from time import sleep
+import threading
 
 TAILLE_TILE = 40
 
@@ -12,28 +14,32 @@ class Game:
 	def __init__(self, puzzle, size):
 		self.puzzle_2d = array_to_2d(puzzle, size)
 		self.size = size
+		#self.solution = solution
+		#where solution is gathered from the constructor parameters
+		self.solution = ''
+	
 		self.texts_canvas = []
 
 		self.fenetre = Tk()
 		self.fenetre.title("N-Puzzle")
 		
-		size_canevas = size * TAILLE_TILE
-		size_window_h = (size * TAILLE_TILE + (1 * TAILLE_TILE)) + 1
-		size_window_w = size * TAILLE_TILE + 1
+		size_canevas = self.size * TAILLE_TILE
+		size_window_h = (self.size * TAILLE_TILE + TAILLE_TILE) + 1
+		size_window_w = self.size * TAILLE_TILE + 1
+		'''if size_window_w < 281 :
+			size_window_h += TAILLE_TILE
+			size_window_w = 127'''
 
 		self.fenetre.resizable(0, 0)
 		self.fenetre.geometry(str(size_window_w) + 'x' + str(size_window_h))
 
-		self.button_solve_size_w = TAILLE_TILE * (size / 2)
-		self.button_solve_size_h = TAILLE_TILE
-
 		self.canevas = Canvas(self.fenetre, width=size_canevas, height=size_canevas, bg='white', bd=1, highlightthickness=0)
-		for i in range(0, size + 1):
+		for i in range(0, self.size + 1):
 			self.canevas.create_line(i * TAILLE_TILE,  0, i * TAILLE_TILE, size_canevas)
 			self.canevas.create_line(0, i * TAILLE_TILE , size_canevas, i * TAILLE_TILE)
-		for i in range(0, size):
+		for i in range(0, self.size):
 			tmp = []
-			for j in range(0, size):
+			for j in range(0, self.size):
 				text = ''
 				if self.puzzle_2d[i][j] != 0:
 					text = str(self.puzzle_2d[i][j])
@@ -42,29 +48,31 @@ class Game:
 
 		self.button_frame = Frame(self.fenetre, highlightthickness=0)
 	
-		self.button_find_solution = Button(self.button_frame, text='Find solution', command=self.find_solution, highlightthickness=0)
-		self.button_find_solution.pack(side=LEFT, padx=5, pady=0)
-
-		self.button_display_solution = Button(self.button_frame, text='Display solution', command=self.display_solution, highlightthickness=0)
-		self.button_display_solution.pack(side=RIGHT, padx=5, pady=0)
-
+		self.button_display_solution = Button(self.button_frame, text='Solution', command=self.display_solution, highlightthickness=0)
+		self.button_display_solution.pack(side=LEFT, padx=5, pady=0)
+		
 		self.button_frame.pack(side=BOTTOM, fill=BOTH, padx=0, pady=5)
 		self.fenetre.bind('<Left>', self.left_move)
 		self.fenetre.bind('<Right>', self.right_move)
 		self.fenetre.bind('<Up>', self.up_move)
 		self.fenetre.bind('<Down>', self.down_move)
 		self.fenetre.bind('q', self.quit)
-
 		self.canevas.pack(side=TOP, fill=BOTH, padx=0, pady=0, ipadx=0, ipady=0)
-
+		
 		self.fenetre.mainloop()
-		self.fenetre.destroy()
-
-	def find_solution(self):
-		print 'solution pls lol'
 
 	def display_solution(self):
-		print 'display solution pls lol'
+		time = 0
+		for item in self.solution:
+			time = time + 500
+			if item == 'H':
+				self.fenetre.after(time, self.up_move, None)
+			elif item == 'G':
+				self.fenetre.after(time, self.left_move, None)
+			elif item == 'D':
+				self.fenetre.after(time, self.right_move, None)
+			elif item == 'B':
+				self.fenetre.after(time, self.down_move, None)
 
 	def get_coords_empty_tile(self):
 		for i in range(0, self.size):
@@ -75,6 +83,7 @@ class Game:
 
 	def quit(self, event):
 		self.fenetre.quit()
+		self.fenetre.destroy()
 	
 	def swap_tiles(self, x0, y0, x1, y1, tab):
 		if tab == 'P':
