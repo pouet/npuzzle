@@ -3,14 +3,25 @@ open Printf
 (*
  * Module Pqueue handle a priority queue
  * The module MUST be mutable
- *
- * -> create : create an empty Pqueue
 *)
 
-module Pqueue = struct
+(*
+module type PQUEUE =
+sig
+    type 'a t
+    val create : unit -> 'a t
+    val is_empty : 'a t -> bool
+end
+*)
+
+(* module Pqueue : PQUEUE = *)
+module Pqueue =
+struct
     exception Pqueue_empty
 
-    let create =
+    type 'a t = (int * 'a) list
+
+    let create () =
         []
 
     let is_empty = function
@@ -23,8 +34,17 @@ module Pqueue = struct
                 if f el e = true then true
                 else is_present f el t
 
+    let remove_if f el l =
+        let rec aux = function
+            | []                  -> []
+            | (_, e as h) :: t    ->
+                    if f el e = true then aux t
+                    else h :: aux t
+        in
+        aux l
+
     let pop = function
-        | (_, e) :: t    -> (e, ref t)
+        | (_, e) :: t    -> (e, t)
         | []        -> raise Pqueue_empty
 
     let rec push prio el = function
@@ -44,6 +64,7 @@ end
 type point = int * int
 
 type node = {
+    grid        : int array array;
     parent      : int * int;
     pos         : int * int;
     mutable f   : int;
@@ -114,25 +135,56 @@ let is_solved grid =
     in
     grid = grid'
 
+(*
+module Pqueue (Param : sig
+        type t
+    end)=
+struct
+    module PrioMap = Map.Make (struct type t = int let compare = compare end)
+
+    type t = Param.t PrioMap.t
+
+    let push = PrioMap.add
+
+    let pop_min t =
+        let key, min = PrioMap.min_binding t in
+        min, PrioMap.remove key t
+end
+
+module SolverPqueue = Pqueue (struct type t = node end)
+*)
+
 let solve grid =
     let current = get_empty_case grid
-    and opened = ref Pqueue.create
-    and closed = ref Pqueue.create
+    and opened = Pqueue.create ()
+    and closed = Pqueue.create ()
     in
 
+(*
+    let rec une_step current opened closed =
+        let opened = { opened with f = 0 } in
+        if c fini then
+            closed
+        else
+            une_step current opened closed
+    in
+*)
+
     let start = {
+        grid    = grid;
         parent  = (-1, -1);
         pos     = current;
         f       = 0;
         g       = 0;
-        h       = 0;
+        h       = 0
     }
     in
 
 
-    opened := Pqueue.push 0 start !opened;
+    let opened = Pqueue.push 0 start opened
+    in
 
-    let ok, opened = Pqueue.pop !opened
+    let ok, opened = Pqueue.pop opened
     in
 
     printf "%d\n" (fst ok.parent);
@@ -140,12 +192,33 @@ let solve grid =
     let neigh = get_neighbors grid current
     in
 
-    List.iter (fun (a, b) -> printf "|> %d %d\n" a b) neigh;
+    List.iter (fun (a, b) -> printf "|> %d %d\n" a b) neigh
 
+(*
     while Pqueue.is_empty !opened = false do
+(*
+        let rec iter_neighbors =
+        | [] -> ()
+        | h :: t ->
+                d
+        in
+*)
         let tmp, opened = Pqueue.pop !opened in
+        let neigh = get_neighbors grid tmp.pos in
+        let cmp_present el e = el.grid = e.grid && el.g < e.g
+        in
+
+        opened := Pqueue.remove_if (fun el e -> el.grid = e.grid) tmp !opened; 
+(*
+        let rec iter_neighbors = function
+        | [] -> ()
+        | h :: t ->
+                if Pqueue.is_present cmp_present start !opened = true then
+        in
+*)
         closed := Pqueue.push tmp.h tmp !closed
     done
+*)
 
 (*
     let rec loop opened closed pt = 
