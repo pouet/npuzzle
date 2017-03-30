@@ -22,7 +22,7 @@ struct
     let push = PrioMap.add
     let pop_min t =
         let key, min = PrioMap.min_binding t in
-        min, PrioMap.remove key t
+        min, key, PrioMap.remove key t
 end
 
 
@@ -30,7 +30,7 @@ end
 type point = int * int
 
 type node = {
-    grid        : int array array;
+    grid        : int array;
     parent      : int * int;
     pos         : int * int;
     mutable f   : int;
@@ -38,39 +38,56 @@ type node = {
     mutable h   : int;
 }
 
+exception InvalidGridSize
+exception InvalidGrid
 
+let grid_size grid =
+    let w = Array.length grid
+    in
+    match w with
+    | 9     -> 3
+    | _     -> raise InvalidGridSize
+
+let print_grid grid =
+    let w = grid_size grid in
+    print_endline "------";
+    Array.fold_left (fun acc x -> printf "%d " x; if acc mod w = w - 1 then
+        print_endline ""; acc + 1) 0 grid |> ignore ;
+    print_endline "------"
 
 
 let get_empty_case grid =
-    let w = Array.length grid
+    let len = Array.length grid
+    and w = grid_size grid in
+    let rec aux = function
+        | n when n >= len       -> raise InvalidGrid
+        | n when grid.(n) = 0   -> n
+        | n                     -> aux (n + 1)
     in
-    let rec aux lines cols =
-        if lines = w then (-1, -1)
-        else if cols = w then aux (lines + 1) 0
-        else (
-            if grid.(lines).(cols) = 0 then (lines, cols)
-            else aux lines (cols + 1)
-            )
-    in
-    aux 0 0
+    let n = aux 0 in
+    (n / w, n mod w)
+
 
 let is_in_grid grid (line, col) =
-    let w = Array.length grid
-    in
+    let w = grid_size grid in
     line >= 0 && col >= 0 && line < w && col < w
 
 let is_move_valid grid (line, col) (movl, movc) =
     is_in_grid grid (line + movl, col + movc)
 
 let play_move grid (line, col) (movl, movc) =
+    let grid = Array.copy grid
+    and w = grid_size grid in
     if is_in_grid grid (line + movl, col + movc)
-    then (
-        let tmpl = line + movl
-        and tmpc = col + movc
-        and tmp = grid.(line).(col) in
-        grid.(line).(col) <- grid.(tmpl).(tmpc);
-        grid.(tmpl).(tmpc) <- tmp;
-        )
+    then begin
+        let tmpl, tmpc = (line + movl, col + movc) in
+        let old = line * w + col
+        and now = tmpl * w + tmpc in
+        let tmp = grid.(old) in
+        grid.(old) <- grid.(now);
+        grid.(now) <- tmp
+    end;
+    grid
 
 let undo_move = play_move
 
@@ -79,27 +96,28 @@ let h_manhattan (ax, ay) (bx, by) =
 
 
 
-let get_neighbors grid (l, c as pt) =
-    let moves = [|
+let get_neighbors grid pt =
+    let moves = [
         (1, 0);
         (0, 1);
         (-1, 0);
         (0, -1);
-    |]
+    ]
     in
-    Array.fold_left (fun acc (a, b as mv) -> if is_move_valid grid pt mv = true then
-        (l + a, c + b) :: acc else acc) [] moves
+    List.fold_left (fun acc mv -> if is_move_valid grid pt mv then
+        play_move grid pt mv :: acc else acc) [] moves
 
 (* TODO: rajouter tailles <> 3 *)
 let is_solved grid =
-    let grid' = [|
-        [| 1; 2; 3 |];
-        [| 4; 5; 6 |];
-        [| 7; 8; 0 |]
-        |]
+    let grid' = [| 1; 2; 3; 4; 5; 6; 7; 8; 0 |]
     in
     grid = grid'
 
+
+(* TODO: a implementer *)
+let move_cost grid grid' =
+    (* calculer l'heuristique + cout *)
+    1
 
 let solve grid =
     let current = get_empty_case grid
@@ -123,41 +141,63 @@ let solve grid =
     let rec loop opened closed = 
         if Pqueue.is_empty opened = true then print_endline "finish"
         else begin
-            let (node, opened) = Pqueue.pop_min opened in
             if is_solved grid then print_endline "Solved !";
+
+            let (current, cost, opened) = Pqueue.pop_min opened in
+            (* TODO: modifier le 0 et mettre celui de openend *)
+            let closed = Pqueue.push 0 current closed in
+            let neigh = get_neighbors current.grid current.pos in
+
+            let rec for_each_neigh opened closed = function
+                | []        -> opened, closed
+                | h :: t    ->
+                        (* TODO: rajouter les heuristiques *)
+                        let cost = current.g in
+
+                        (* exists prends un node et pas un array ! *)
+(*
+                        if Pqueue.exists h opened then begin
+                            print_endline "exists"
+                        end;
+*)
+
+
+                        print_grid h;
+                        for_each_neigh opened closed t
+(*
+                        let grid' = 
+                        let cost = current.g + move_cost h.grid
+*)
+            in
+
+            let opened, closed = for_each_neigh opened closed neigh
+            in
+
             loop opened closed
         end
     in
     loop opened closed
 
-(*
-        let rec iter_neighbors =
-        | [] -> ()
-        | h :: t ->
-                d
-        in
-*)
-
 let _ =
     let grid = [|
-        [| 8; 7; 5 |];
-        [| 3; 0; 1 |];
-        [| 4; 2; 6 |]
+        8; 7; 5;
+        3; 0; 1;
+        4; 2; 6
         |]
     in
 (*
     let grid = [|
-        [| 1; 2; 3 |];
-        [| 4; 5; 6 |];
-        [| 7; 8; 0 |]
+        1; 2; 3;
+        4; 5; 6;
+        7; 8; 0
         |]
     in
 *)
 (*
     let grid' = [|
-        [| 8; 7; 5 |];
-        [| 3; 0; 1 |];
-        [| 4; 2; 3 |]
+        8; 7; 5;
+        3; 0; 1;
+        4; 2; 3
         |]
     in
     if grid = grid' then print_endline "same"
