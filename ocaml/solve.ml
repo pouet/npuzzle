@@ -93,15 +93,6 @@ let undo_move = play_move
 
 (* ============================== *)
 
-(*
-let linear_conflict grid =
-    let grid' = [| 1; 2; 3; 8; 0; 4; 7; 6; 5 |] in
-    let cols = Array.make 9 0
-    and rows = Array.make 9 0
-    in
-    let rec cpt r c =
-*)
-
 exception NotFound
 
 let array_index tab n =
@@ -112,6 +103,80 @@ let array_index tab n =
         else aux (i + 1)
     in
     aux 0
+
+let linear_conflict grid =
+(*     let grid' = [| 1; 2; 3; 4; 0; 5; 6; 7; 8 |] in *)
+    let grid' = [| 1; 2; 3; 8; 0; 4; 7; 6; 5 |] in
+    let w = grid_size grid in
+    let cols = Array.make 9 0
+    and rows = Array.make 9 0
+    in
+    let rec cpt = function
+        | n when n < w * w  ->
+                let idx = array_index grid n
+                and idx' = array_index grid' n in
+                let line, col = (idx / w, idx mod w)
+                and line', col' = (idx' / w, idx' mod w) in
+(*                 printf "%d -> [%d %d] (%d, %d) (%d %d)\n" n idx idx' line col line' col'; *)
+                if line = line' then rows.(idx) <- col' - col;
+                if col = col' then cols.(col * w + line) <- line' - line;
+                cpt (n + 1)
+        | _             -> ()
+    in
+    cpt 0;
+    let rec count acc n =
+        let rec count' acc i j =
+            if i >= w then acc
+            else if j >= w then count' acc (i + 1) 0
+            else begin
+                let cnt = rows.(i) + rows.(j) in
+                let acc = acc + (if rows.(i) <> 0 && cnt = 0 then 1 else 0) in
+                let cnt = cols.(i) + cols.(j) in
+                let acc = acc + (if cols.(i) <> 0 && cnt = 0 then 1 else 0) in
+(*                 if rows.(i) <> 0 && cnt = 0 then printf "collision : [%d %d] (%d, %d) %d\n" i j rows.(i) rows.(j) cnt; *)
+(*                 let cnt = cols.(i) + cols.(j) in *)
+(*                 printf "%d %d - %4d %4d\n" i j cols.(i) cols.(j); *)
+(*                 if cols.(i) <> 0 && cnt = 0 then printf "collision : [%d %d] (%d, %d) %d\n" i j cols.(i) cols.(j) cnt; *)
+                count' acc i (j + 1)
+            end
+        in
+        if n < w then count' 0 0 0
+        else acc
+    in
+    count 0 0
+(*     printf "conflicts : %d\n" (count 0 0); *)
+(*
+    (* chaque ligne *)
+    for i = 0 to w - 1 do
+        (* chaque case et case + 1 *)
+        for j = i * w to (i + 1) * w - 1 do
+            for k = j + 1 to (i + 1) * w - 1 do
+                let a = rows.(j) + rows.(k) in
+                printf "%d %d - %4d %4d\n" i j rows.(j) rows.(k);
+                if rows.(j) <> 0 && a = 0 then printf "collision : [%d %d] (%d, %d) %d\n" j k grid.(j) grid.(k) a;
+                let a = cols.(j) + cols.(k) in
+                if cols.(j) <> 0 && a = 0 then printf "collision : [%d %d] (%d, %d) %d\n" j k grid.(j) grid.(k) a
+            done;
+        done;
+    done;
+*)
+(*
+    (* chaque colonne *)
+    for i = 0 to w - 1 do
+        (* chaque case et case + 1 *)
+        for j = i * w to (i + 1) * w - 1 do
+            for k = j + 1 to (i + 1) * w - 1 do
+                let a = rows.(j) + rows.(k) in
+                printf "%d %d - %4d %4d\n" i j rows.(j) rows.(k);
+                if rows.(j) <> 0 && (a = 0 || abs a > 100) then printf "collision : [%d %d] (%d, %d) %d\n" j k rows.(j) rows.(k) a
+            done;
+        done;
+    done;
+*)
+(*
+    print_grid cols;
+    print_grid rows
+*)
 
 let h_manhattan (ax, ay) (bx, by) =
     abs (ax - bx) + abs (ay - by)
@@ -126,7 +191,7 @@ let heuristic grid =
                 else calc (h_manhattan a b) (n + 1)
         | _                 -> acc
     in
-    calc 0 0
+    calc 0 0 + 2 * linear_conflict grid
 
 
 (* ============================== *)
@@ -158,17 +223,16 @@ let for_each_neigh opened closed node neighbors =
         | []        -> opened, closed
         | next :: t ->
                 let new_cost = node.cost + 1 in
-                if (Pqueue.exists next.grid opened &&
-                    (Pqueue.get next.grid opened).cost < new_cost) ||
-                    (Pqueue.exists next.grid closed &&
-                    (Pqueue.get next.grid closed).cost < new_cost) then
+                if Pqueue.exists next.grid closed = false ||
+                    new_cost < (Pqueue.get next.grid closed).cost then begin
+                        let prio = new_cost + heuristic next.grid in
+                        let closed = Pqueue.push node.grid { node with cost = new_cost } closed in
+                        let opened = Pqueue.push next.grid
+                            { next with cost = new_cost; prio = prio } opened in
                         aux opened closed t
-                else begin
-                    let prio = new_cost + heuristic next.grid in
-                    let opened = Pqueue.push next.grid
-                        { next with cost = new_cost; prio = prio } opened in
-                    aux opened closed t
                 end
+                else
+                    aux opened closed t
     in
     aux opened closed neighbors
 
@@ -225,7 +289,7 @@ let solve grid =
         else begin
             let key, node, opened = Pqueue.pop_min opened in
             let neigh = get_neighbors node.grid node.pos in
-            let closed = Pqueue.push key node closed in
+(*             let closed = Pqueue.push key node closed in *)
 
             if is_solved node.grid then
                 solved closed node;
@@ -274,6 +338,25 @@ let _ =
 (*
     let grid = [|
         1; 2; 3;
+        4; 0; 5;
+        6; 7; 8
+        |]
+    in
+*)
+
+(*
+ * invalid
+    let grid = [|
+        4; 2; 5;
+        1; 0; 6;
+        3; 8; 7
+        |]
+    in
+*)
+
+(*
+    let grid = [|
+        1; 2; 3;
         8; 4; 5;
         7; 6; 0
         |]
@@ -306,4 +389,5 @@ let _ =
     if grid = grid' then print_endline "same"
     else print_endline "not same";
 *)
+(* linear_conflict grid *)
     solve grid
