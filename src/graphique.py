@@ -1,8 +1,7 @@
 from Tkinter import *
 from time import sleep
-import threading
 
-TAILLE_TILE = 40
+TAILLE_TILE = 50
 
 def array_to_2d(array, size):
 	arr = []
@@ -11,12 +10,10 @@ def array_to_2d(array, size):
 	return arr
 
 class Game:
-	def __init__(self, puzzle, size):
+	def __init__(self, puzzle, size, solution):
 		self.puzzle_2d = array_to_2d(puzzle, size)
 		self.size = size
-		#self.solution = solution
-		#where solution is gathered from the constructor parameters
-		self.solution = ''
+		self.solution = solution
 	
 		self.texts_canvas = []
 
@@ -26,9 +23,6 @@ class Game:
 		size_canevas = self.size * TAILLE_TILE
 		size_window_h = (self.size * TAILLE_TILE + TAILLE_TILE) + 1
 		size_window_w = self.size * TAILLE_TILE + 1
-		'''if size_window_w < 281 :
-			size_window_h += TAILLE_TILE
-			size_window_w = 127'''
 
 		self.fenetre.resizable(0, 0)
 		self.fenetre.geometry(str(size_window_w) + 'x' + str(size_window_h))
