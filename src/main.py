@@ -20,7 +20,7 @@ def is_solvable(array):
 	for i in array:
 		if array[i] != 0:
 			for j in range(i + 1, length):
-				if array[j] < array[i]:
+				if array[j] != 0 and array[j] < array[i]:
 					count += 1
 	if count % 2 == 0:
 		return True
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 		string = ''
 		for item in puzzle:
 			string = string + str(item)
-		print "[|" + "; ".join(string)+ "|]"
+		print "[| " + "; ".join(string)+ "; |]"
 	else:
 		print_puzzle(puzzle, size)
 	if is_solvable(puzzle) == False:
