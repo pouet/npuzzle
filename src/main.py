@@ -7,6 +7,19 @@ def leave(message):
 	print message
 	exit()
 
+def array_to_2d(array, size):
+	arr = []
+	for i in range(0, size):
+		arr.append(array[i*size:i*size+size])
+	return arr
+
+def get_row_empty_tile(array_2d, size):
+	for i in range(0, size):
+		for j in range(0, size):
+			if array_2d[i][j] == 0:
+				return (size - 1) - i
+	return -1
+
 def get_free_places(array):
 	arr = []
 	for index, value in enumerate(array):
@@ -14,7 +27,7 @@ def get_free_places(array):
 			arr.append(index)
 	return arr
 
-def is_solvable(array):
+def is_solvable(array, size):
 	count = 0
 	length = len(array)
 	for i in array:
@@ -22,7 +35,9 @@ def is_solvable(array):
 			for j in range(i + 1, length):
 				if array[j] != 0 and array[j] < array[i]:
 					count += 1
-	if count % 2 == 0:
+	array_2d = array_to_2d(array, size)
+	row = get_row_empty_tile(array_2d, size)
+	if (size % 2 != 0 and count % 2 != 0) or (size % 2 == 0 and ((row % 2 == 0 and count % 2 != 0) or (row % 2 != 0 and count % 2 == 0))):
 		return True
 	return False
 
@@ -31,7 +46,7 @@ def gen_puzzle(size, solvable):
 	arr = [0] * size
 	for i in range(1, size):
 		arr[random.choice(get_free_places(arr))] = i
-	if is_solvable(arr) != solvable:
+	if is_solvable(arr, size) != solvable:
 		length = len(arr)
 		for index, value in enumerate(arr):
 			if index < length - 1 and arr[index] != 0 and arr[index + 1] != 0:
@@ -139,7 +154,7 @@ if __name__ == "__main__":
 		print "[| " + "; ".join(string)+ "; |]"
 	else:
 		print_puzzle(puzzle, size)
-	if is_solvable(puzzle) == False:
+	if is_solvable(puzzle, size) == False:
 		leave('This puzzle can\'t be solved.')
 	#penis.solve(size, puzzle, puzzle.index(0))
 	'''Gather the solution from the function solve and set it in the constructor
