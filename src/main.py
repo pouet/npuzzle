@@ -43,7 +43,7 @@ def gen_puzzle(size, solvable):
 
 def print_puzzle(puzzle, size):
 	nb_spaces = len(str(size * size - 1))
-	
+
 	print 'Puzzle :'
 	for idx, value in enumerate(puzzle):
 		if idx % size == 0 and idx != 0:
@@ -89,6 +89,7 @@ if __name__ == "__main__":
 	parser.add_argument("--solvable", action="store_true", default=False, help="Create a solvable puzzle.")
 	parser.add_argument("--unsolvable", action="store_true", default=False, help="Create an unsolvable puzzle.")
 	parser.add_argument("-g", "--graphics", action="store_true", default=False, help="Create a graphic version of the solution.")
+	parser.add_argument("--ocaml", action="store_true", default=False, help="Send the puzzle in stdout in ocaml format")
 
 	args = parser.parse_args()
 	puzzle = []
@@ -130,11 +131,19 @@ if __name__ == "__main__":
 
 		if size == -1 or (size != -1 and len(puzzle) != size*size):
 			leave('Missing informations in file.')
-	print_puzzle(puzzle, size)
+	
+	if args.ocaml:
+		string = ''
+		for item in puzzle:
+			string = string + str(item)
+		print "[|" + "; ".join(string)+ "|]"
+	else:
+		print_puzzle(puzzle, size)
 	if is_solvable(puzzle) == False:
 		leave('This puzzle can\'t be solved.')
 	#penis.solve(size, puzzle, puzzle.index(0))
 	'''Gather the solution from the function solve and set it in the constructor
 	@TODO'''
-	if args.graphics:
-		game = Game(puzzle, size)
+	#if args.graphics:
+		#game = Game(puzzle, size)
+		#game = Game([6, 12, 5, 11, 13, 8, 1, 7, 9, 2, 3, 10, 14, 4, 15, 0], 4, 'BDDBBGHHDHGBDDBBGGHDDBGGGHHDBBGHHHDBGHDDDBGGBBGHHH')
