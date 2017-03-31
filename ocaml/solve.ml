@@ -91,6 +91,27 @@ let play_move grid (line, col) (movl, movc) =
 let undo_move = play_move
 
 
+(* ============================== *)
+
+(*
+let linear_conflict grid =
+    let grid' = [| 1; 2; 3; 8; 0; 4; 7; 6; 5 |] in
+    let cols = Array.make 9 0
+    and rows = Array.make 9 0
+    in
+    let rec cpt r c =
+*)
+
+exception NotFound
+
+let array_index tab n =
+    let w = Array.length tab in
+    let rec aux i =
+        if i >= w then raise NotFound;
+        if tab.(i) = n then i
+        else aux (i + 1)
+    in
+    aux 0
 
 let h_manhattan (ax, ay) (bx, by) =
     abs (ax - bx) + abs (ay - by)
@@ -106,6 +127,9 @@ let heuristic grid =
         | _                 -> acc
     in
     calc 0 0
+
+
+(* ============================== *)
 
 
 let get_neighbors grid (a, b as pt) =
@@ -147,24 +171,22 @@ let for_each_neigh opened closed node neighbors =
                 end
     in
     aux opened closed neighbors
-(*
-    let update_queue queue neigh new_cost =
-        if Pqueue.exists neigh.grid queue = false then queue
-        else begin
-            let a = Pqueue.get neigh.grid queue in
-            if (Pqueue.get neigh.grid queue).cost > 0 then print_endline "ok";
-            if new_cost < a.cost then Pqueue.remove neigh.grid queue
-            else queue
-        end
-    in
-*)
-(*
-                let opened = update_queue opened next new_cost
-                and closed = update_queue closed next new_cost in
 
-                if Pqueue.exists next.grid opened = false &&
-                    Pqueue.exists next.grid closed = false then begin
+(*
+                let new_cost = node.cost + 1 in
+                if (Pqueue.exists next.grid opened &&
+                    (Pqueue.get next.grid opened).cost < new_cost) ||
+                    (Pqueue.exists next.grid closed &&
+                    (Pqueue.get next.grid closed).cost < new_cost) then
+                        aux opened closed t
+                else begin
+                    let prio = new_cost + heuristic next.grid in
+                    let opened = Pqueue.push next.grid
+                        { next with cost = new_cost; prio = prio } opened in
+                    aux opened closed t
+                end
 *)
+
 
 (* TODO: A enlever *)
 exception Finished
@@ -247,6 +269,7 @@ let _ =
 (*     let grid = [| 3; 4; 1; 0; 2; 7; 6; 5; 8; |] in *)
 
     let grid = [| 5; 4; 2; 1; 3; 0; 7; 6; 8; |] in
+(*     let grid = [| 4; 6; 1; 3; 2; 0; 7; 5; 8; |] in *)
 
 (*
     let grid = [|
