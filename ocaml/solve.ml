@@ -33,7 +33,8 @@ type node = {
     grid        : int array;
     parent      : int array;
     pos         : point;
-    prio        : int;
+    cost        : int; (* g(x) *)
+    prio        : int; (* h(x) *)
 }
 
 exception InvalidGridSize
@@ -115,14 +116,10 @@ let get_neighbors grid (a, b as pt) =
         (0, -1);
     ]
     in
-    let rec aux = function
-        | []                    -> []
-        | (x, y as mv) :: t     ->
-                if is_move_valid grid pt mv
-                then { prio = 0; grid = play_move grid pt mv; parent = grid; pos = (a + x, b + y); } :: aux t
-                else aux t
-    in
-    aux moves
+    List.fold_left (fun acc (x, y as mv) -> if is_move_valid grid pt mv then
+        { cost = 0; prio = 0; grid = play_move grid pt mv; parent = grid;
+            pos = (a + x, b + y); } :: acc else acc) []
+         moves
 
 
 (* TODO: rajouter tailles <> 3 *)
@@ -132,101 +129,87 @@ let is_solved grid =
     grid = grid'
 
 
-let for_each_neigh opened closed node neigh =
-    let test closed next new_cost =
-        if Pqueue.exists next.grid closed = false then true
-        else begin
-            let a = Pqueue.get next.grid closed in
-            new_cost < a.prio
-        end
-    in
+let for_each_neigh opened closed node neighbors =
     let rec aux opened closed = function
         | []        -> opened, closed
         | next :: t ->
-                let new_cost = node.prio + 1 in
-                if test closed next new_cost
-                then begin
+                let new_cost = node.cost + 1 in
+                if (Pqueue.exists next.grid opened &&
+                    (Pqueue.get next.grid opened).cost < new_cost) ||
+                    (Pqueue.exists next.grid closed &&
+                    (Pqueue.get next.grid closed).cost < new_cost) then
+                        aux opened closed t
+                else begin
                     let prio = new_cost + heuristic next.grid in
-                    let opened = Pqueue.push next.grid { next with prio = prio } opened in
+                    let opened = Pqueue.push next.grid
+                        { next with cost = new_cost; prio = prio } opened in
                     aux opened closed t
-        end
-        else
-            aux opened closed t
+                end
     in
-    aux opened closed neigh
+    aux opened closed neighbors
+(*
+    let update_queue queue neigh new_cost =
+        if Pqueue.exists neigh.grid queue = false then queue
+        else begin
+            let a = Pqueue.get neigh.grid queue in
+            if (Pqueue.get neigh.grid queue).cost > 0 then print_endline "ok";
+            if new_cost < a.cost then Pqueue.remove neigh.grid queue
+            else queue
+        end
+    in
+*)
+(*
+                let opened = update_queue opened next new_cost
+                and closed = update_queue closed next new_cost in
 
-
+                if Pqueue.exists next.grid opened = false &&
+                    Pqueue.exists next.grid closed = false then begin
+*)
 
 (* TODO: A enlever *)
 exception Finished
 
-let solve grid =
-    let current = get_empty_case grid
-    and opened = Pqueue.create ()
-    and closed = Pqueue.create ()
-    in
+let solved closed node =
+    print_endline "Solved !";
 
+    let rec get_answer parent =
+        let node = Pqueue.get parent closed in
+        if node.grid <> node.parent then begin
+            get_answer node.parent;
+            print_grid node.grid
+        end
+        else
+            print_grid node.grid
+    in
+    get_answer node.grid;
+    raise Finished
+
+
+let solve grid =
     let start = {
         grid    = grid;
         parent  = grid;
-        pos     = current;
+        pos     = get_empty_case grid;
         prio    = 0;
+        cost    = 0;
     }
     in
-
-    let opened = Pqueue.push grid start opened
+    let opened = Pqueue.push grid start Pqueue.empty
+    and closed = Pqueue.create ()
     in
 
     let rec loop opened closed = 
         if Pqueue.is_empty opened then print_endline "Finished... no solutions"
         else begin
-
             let key, node, opened = Pqueue.pop_min opened in
             let neigh = get_neighbors node.grid node.pos in
             let closed = Pqueue.push key node closed in
 
-            if is_solved node.grid then begin
-                print_endline "Solved !";
+            if is_solved node.grid then
+                solved closed node;
 
-                let rec get_answer parent =
-                    let node = Pqueue.get parent closed in
-                    if node.grid <> node.parent then begin
-                        get_answer node.parent;
-                        print_grid node.grid
-                    end
-                    else
-                        print_grid node.grid
-                in
-                get_answer node.grid;
-
-                raise Finished
-            end;
-
-(*
-            let rec for_each_neigh opened closed = function
-                | []        -> opened, closed
-                | next :: t ->
-                        let new_cost = node.prio + 1 in
-                        let test_grid () =
-                            let a = Pqueue.get next.grid closed in
-                            new_cost < a.prio
-                        in
-                        if Pqueue.exists next.grid closed = false || test_grid ()
-                             then begin
-                            let prio = new_cost + heuristic next.grid in
-                            let opened = Pqueue.push next.grid { next with prio
-                            = prio } opened in
-                            for_each_neigh opened closed t
-                        end
-                        else
-                            for_each_neigh opened closed t
-            in
-*)
-
-(*             let opened, closed = for_each_neigh opened closed neigh *)
             let opened, closed = for_each_neigh opened closed node neigh
             in
-
             loop opened closed
         end
     in
@@ -244,7 +227,7 @@ let _ =
     let grid = [| 6; 8; 4; 3; 2; 0; 5; 7; 1; |] in
     let grid = [| 4; 2; 7; 8; 1; 0; 5; 3; 6; |] in
 *)
-    let grid = [| 2; 4; 8; 7; 1; 5; 0; 3; 6; |] in
+(*     let grid = [| 2; 4; 8; 7; 1; 5; 0; 3; 6; |] in *)
     (* Celui la est rapide *)
 (*     let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in  *)
 (*     let grid = [| 1; 3; 0; 4; 6; 7; 8; 5; 2; |] in *)
@@ -262,6 +245,8 @@ let _ =
 
 (*     let grid = [| 7; 1; 5; 0; 3; 6; 8; 4; 2; |] in *)
 (*     let grid = [| 3; 4; 1; 0; 2; 7; 6; 5; 8; |] in *)
+
+    let grid = [| 5; 4; 2; 1; 3; 0; 7; 6; 8; |] in
 
 (*
     let grid = [|
