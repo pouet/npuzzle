@@ -6,17 +6,8 @@ open Printf
 module Pqueue =
 struct
     module PrioMap = Map.Make (struct
-        (* grid * (line * col) * priority *)
-        type t =  int array * (int * int) * int
-
-        let compare (ag, _, app) (bg, _, bpp) =
-            if app < bpp then -1
-            else if app > bpp then 1
-            else begin
-                if ag < bg then -1
-                else if ag > bg then 1
-                else 0
-            end
+        type t = int array
+        let compare = compare
     end)
 
     type t = PrioMap.key
@@ -24,17 +15,16 @@ struct
     let empty = PrioMap.empty
     let is_empty = PrioMap.is_empty
     let remove = PrioMap.remove
+    let get = PrioMap.find
 
     let create () = empty
 
-    let exists el map = PrioMap.exists (fun _ el' -> el = el') map
-    let filter el map = PrioMap.filter (fun _ el' -> el = el') map
-    let get el map = PrioMap.choose (filter el map)
+    let exists key map = PrioMap.exists (fun key' _ -> key = key') map
 
     let push = PrioMap.add
     let pop_min t =
         let key, min = PrioMap.min_binding t in
-        min, key, PrioMap.remove key t
+        key, min, PrioMap.remove key t
 end
 
 type point = int * int
@@ -133,11 +123,6 @@ let get_neighbors grid (a, b as pt) =
     in
     aux moves
 
-(*
-    List.fold_left (fun acc mv -> if is_move_valid grid pt mv then
-            { grid = play_move grid pt mv; pos = pt + mv; } :: acc else acc) [] moves
-*)
-
 
 (* TODO: rajouter tailles <> 3 *)
 let is_solved grid =
@@ -161,64 +146,36 @@ let solve grid =
     }
     in
 
-    let opened = Pqueue.push (grid, current, 0) start opened
+    let opened = Pqueue.push grid start opened
     in
 
     let rec loop opened closed = 
-        if Pqueue.is_empty opened = true then print_endline "finish"
+        if Pqueue.is_empty opened = true then print_endline "Finished..."
         else begin
-(*             if is_solved grid then print_endline "Solved !"; *)
 
-            let current, key, opened = Pqueue.pop_min opened in
-(*             let closed = Pqueue.push cost current closed in *)
+            let key, node, opened = Pqueue.pop_min opened in
+            let neigh = get_neighbors node.grid node.pos in
+            let closed = Pqueue.push key node closed in
 
-            let neigh = get_neighbors current.grid current.pos in
-
-            if is_solved current.grid then (print_endline "Solved !"; raise Finished);
+            if is_solved node.grid then (print_endline "Solved !"; raise Finished);
 
             let rec for_each_neigh opened closed = function
                 | []        -> opened, closed
                 | next :: t ->
-(*                         let new_cost = cost + 1 in *)
-                        for_each_neigh opened closed t
-
-(*
-                        if (Pqueue.exists next closed = false ||
-                            new_cost < fst (Pqueue.get next closed))
-                        then begin
-                            let closed = Pqueue.remove next closed in
-                            let closed = Pqueue.push new_cost next closed in
+                        let new_cost = node.prio + 1 in
+                        let test_grid () =
+                            let a = Pqueue.get next.grid closed in
+                            new_cost < a.prio
+                        in
+                        if Pqueue.exists next.grid closed = false || test_grid ()
+                             then begin
                             let prio = new_cost + heuristic next.grid in
-                            let opened = Pqueue.push prio next opened in
-                            printf "%d\n" prio;
+                            let opened = Pqueue.push next.grid { next with prio
+                            = prio } opened in
                             for_each_neigh opened closed t
                         end
-                        else 
+                        else
                             for_each_neigh opened closed t
-*)
-
-(*
-                        if Pqueue.exists next closed then begin
-                            let cost', _ = Pqueue.get next closed in
-(*                             printf "%d %d\n" new_cost cost'; *)
-                            if new_cost < cost' then begin
-                                let prio = new_cost + heuristic next.grid in
-                                let opened = Pqueue.push prio next opened in
-                                printf "%d\n" prio;
-                                for_each_neigh opened closed t
-                            end
-                            else
-                                for_each_neigh opened closed t
-                        end
-                        else begin
-(*
-                            let prio = new_cost + heuristic next.grid in
-                            let opened = Pqueue.push prio next opened in
-*)
-(*                             print_grid next.grid; *)
-                            for_each_neigh opened closed t
-                        end
-*)
             in
 
             let opened, closed = for_each_neigh opened closed neigh
