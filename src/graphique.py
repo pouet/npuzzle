@@ -3,12 +3,6 @@ from time import sleep
 
 TAILLE_TILE = 50
 
-def array_to_2d(array, size):
-	arr = []
-	for i in range(0, size):
-		arr.append(array[i*size:i*size+size])
-	return arr
-
 class Game:
 	def __init__(self, puzzle, size, solution):
 		self.puzzle_2d = array_to_2d(puzzle, size)

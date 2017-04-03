@@ -13,12 +13,19 @@ def array_to_2d(array, size):
 		arr.append(array[i*size:i*size+size])
 	return arr
 
-def get_row_empty_tile(array_2d, size):
+def get_elem_pos_in_2d_array(array, element, size):
 	for i in range(0, size):
 		for j in range(0, size):
-			if array_2d[i][j] == 0:
-				return (size - 1) - i
-	return -1
+			if array[i][j] == element:
+				return (i, j)
+	return (-1, -1)
+
+def get_row_empty_tile_2d(array, size):
+	x, y = get_elem_pos_in_2d_array(array, 0, size)
+	return x
+
+def get_row_empty_tile(array, size):
+	return get_row_empty_tile_2d(array_to_2d(array, size), size)
 
 def get_free_places(array):
 	arr = []
@@ -27,34 +34,118 @@ def get_free_places(array):
 			arr.append(index)
 	return arr
 
-def is_solvable(array, size):
+def fill_top_right(array, x1, y1, x2, y2, nb, size):
+	for i in range(x1, x2 + 1):
+		if nb >= size * size:
+			return array
+		array[y1][i] = nb
+		nb += 1
+	
+	for i in range(y1 + 1, y2 + 1):
+		if nb >= size * size:
+			return array
+		array[i][x2] = nb
+		nb += 1
+
+	if x2 - x1:
+		return fill_bottom_left(array, x1, y1 + 1, x2 - 1, y2, nb, size)
+	return array
+
+def fill_bottom_left(array, x1, y1, x2, y2, nb, size):
+	for i in range(x2, x1 - 1, -1):
+		if nb >= size * size:
+			return array
+		array[y2][i] = nb
+		nb += 1
+	
+	for i in range(y2 - 1, y1 - 1, -1):
+		if nb >= size * size:
+			return array
+		array[i][x1] = nb
+		nb += 1
+
+	if x2 - x1 > 0:
+		return fill_top_right(array, x1 + 1, y1, x2, y2 - 1, nb, size)
+	return array
+
+def gen_snail(size):
+	arr = [[0 for x in range(size)] for y in range(size)]
+	return fill_top_right(arr, 0, 0, size - 1, size - 1, 1, size)
+	
+def get_empty_tile_row_from_size(size):
+	return get_row_empty_tile_2d(gen_snail(size), size)
+
+def check_top_right(array, x1, y1, x2, y2, element, nb, size, encountered):
+	for i in range(x1, x2 + 1):
+		if array[y1][i] == element:
+			encountered = True
+		elif array[y1][i] != 0 and array[y1][i] < element and encountered == True:
+			nb += 1
+	
+	for i in range(y1 + 1, y2 + 1):
+		if array[i][x2] == element:
+			encountered = True
+		elif array[i][x2] != 0 and array[i][x2] < element and encountered == True:
+			nb += 1
+
+	if x2 - x1:
+		return check_bottom_left(array, x1, y1 + 1, x2 - 1, y2, element, nb, size, encountered)
+	return nb
+
+def check_bottom_left(array, x1, y1, x2, y2, element, nb, size, encountered):
+	for i in range(x2, x1 - 1, -1):
+		if array[y2][i] == element:
+			encountered = True
+		elif array[y2][i] != 0 and array[y2][i] < element and encountered == True:
+			nb += 1
+	
+	for i in range(y2 - 1, y1 - 1, -1):
+		if array[i][x1] == element:
+			encountered = True
+		elif array[i][x1] != 0 and array[i][x1] < element and encountered == True:
+			nb += 1
+
+	if x2 - x1 > 0:
+		return check_top_right(array, x1 + 1, y1, x2, y2 - 1, element, nb, size, encountered)
+	return nb
+
+def check_snail_inversion(array_2d, size):
 	count = 0
-	length = len(array)
-	for i in array:
-		if array[i] != 0:
-			for j in range(i + 1, length):
-				if array[j] != 0 and array[j] < array[i]:
-					count += 1
-	array_2d = array_to_2d(array, size)
-	row = get_row_empty_tile(array_2d, size)
-	if (size % 2 != 0 and count % 2 != 0) or (size % 2 == 0 and ((row % 2 == 0 and count % 2 != 0) or (row % 2 != 0 and count % 2 == 0))):
+	for i in range(2, size * size):
+		nb = check_top_right(array_2d, 0, 0, size - 1, size - 1, i, 0, size, False)
+		print 'count for ' + str(i) + ' = ' + str(nb)
+		print '-----------------------------------------------------'
+		count += nb
+	return count
+
+def is_solvable(array, size):
+	array_ref_2d = gen_snail(size)
+	array_ref_1d = []
+	for items in array_ref_2d:
+		for item in items:
+			array_ref_1d.append(item)
+
+	count = check_snail_inversion(array_to_2d(array, size), size)
+
+	row = get_row_empty_tile(array, size)
+	row_ref = get_empty_tile_row_from_size(size)
+	print 'row_ref = ' + str(row_ref) + ' - row = ' + str(row)
+	row = abs(row_ref - row)
+	row += 1
+
+	print 'row = ' + str(row)
+	print 'count = ' + str(count)
+	print 'size = ' + str(size)
+	if (size % 2 != 0 and count % 2 == 0) or (size % 2 == 0 and ((row % 2 == 0 and count % 2 != 0) or (row % 2 != 0 and count % 2 == 0))):
 		return True
 	return False
 
-def gen_puzzle(size, solvable):
-	size *= size
-	arr = [0] * size
-	for i in range(1, size):
-		arr[random.choice(get_free_places(arr))] = i
-	if is_solvable(arr, size) != solvable:
-		length = len(arr)
-		for index, value in enumerate(arr):
-			if index < length - 1 and arr[index] != 0 and arr[index + 1] != 0:
-				tmp = arr[index]
-				arr[index] = arr[index + 1]
-				arr[index + 1] = tmp
-				break
-	return arr
+def is_valid(pt, mv):
+	x, y = pt
+	a, b = mv
+	x = x + a
+	y = y + b
+	return x >= 0 and x < 3 and y >= 0 and y < 3
 
 def print_puzzle(puzzle, size):
 	nb_spaces = len(str(size * size - 1))
@@ -68,6 +159,34 @@ def print_puzzle(puzzle, size):
 		print ' ' * nb,
 	print
 	print
+
+def gen_puzzle(size, solvable):
+	size_total = size * size
+	grid = gen_snail(size)
+	if solvable == False:
+		y_last, x_last = get_elem_pos_in_2d_array(grid, size_total - 1, size)
+		y_before, x_before = get_elem_pos_in_2d_array(grid, size_total - 2, size)
+		tmp = grid[y_last][x_last]
+		grid[y_last][x_last] = grid[y_before][x_before]
+		grid[y_before][x_before] = tmp
+	moves = [ (-1, 0), (1, 0), (0, -1), (0, 1) ]
+	empty = (1, 1)
+
+	for i in range(0, 1000):
+		r = random.randint(0, 3)
+		if is_valid(empty, moves[r]):
+			new = (empty[0] + moves[r][0], empty[1] + moves[r][1])
+			tmp = grid[empty[0]][empty[1]]
+			grid[empty[0]][empty[1]] = grid[new[0]][new[1]]
+			grid[new[0]][new[1]] = tmp
+			empty = new
+	arr = []
+	for items in grid:
+		for item in items:
+			arr.append(item)
+	return arr
+
+
 
 def check_line_size(line, size):
 	split = filter(None, line.split(" "))
@@ -104,7 +223,7 @@ if __name__ == "__main__":
 	parser.add_argument("--solvable", action="store_true", default=False, help="Create a solvable puzzle.")
 	parser.add_argument("--unsolvable", action="store_true", default=False, help="Create an unsolvable puzzle.")
 	parser.add_argument("-g", "--graphics", action="store_true", default=False, help="Create a graphic version of the solution.")
-	parser.add_argument("--ocaml", action="store_true", default=False, help="Send the puzzle in stdout in ocaml format")
+	parser.add_argument("-o", "--ocaml", action="store_true", default=False, help="Send the puzzle in stdout in ocaml format")
 
 	args = parser.parse_args()
 	puzzle = []
