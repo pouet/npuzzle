@@ -291,8 +291,10 @@ let solve grid =
             let neigh = get_neighbors node.grid node.pos in
 (*             let closed = Pqueue.push key node closed in *)
 
-            if is_solved node.grid then
-                solved closed node;
+            if is_solved node.grid then begin
+                let closed = Pqueue.push key node closed in
+                solved closed node
+            end;
 
             let opened, closed = for_each_neigh opened closed node neigh
             in
