@@ -1,5 +1,6 @@
 from Tkinter import *
 from time import sleep
+from main import array_to_2d
 
 TAILLE_TILE = 50
 
