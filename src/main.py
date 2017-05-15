@@ -119,8 +119,6 @@ def check_snail_inversion(array_2d, size):
 	count = 0
 	for i in range(2, size * size):
 		nb = check_top_right(array_2d, 0, 0, size - 1, size - 1, i, 0, size, False)
-		print 'count for ' + str(i) + ' = ' + str(nb)
-		print '-----------------------------------------------------'
 		count += nb
 	return count
 
@@ -142,17 +140,7 @@ def is_solvable(array, size):
 
 	count = check_snail_inversion(array_to_2d(array, size), size)
 
-	row = get_row_empty_tile(array, size)
-	row_ref = get_empty_tile_row_from_size(size)
-	print 'row_ref = ' + str(row_ref) + ' - row = ' + str(row)
-	row = row_ref - row
-	row += 1
-
-	print 'count = ' + str(count)
-	print 'row = ' + str(row)
-	print 'size = ' + str(size)
-
-	if (size % 2 != 0 and count % 2 == 0) or (size % 2 == 0 and ((row % 2 == 0 and count % 2 != 0) or (row % 2 != 0 and count % 2 == 0))):
+	if count % 2 == 0:
 		return True
 	return False
 
