@@ -1,4 +1,9 @@
+#use "/Users/nchrupal/.opam/system/lib/toplevel/topfind"
+#require "batteries"
+open Batteries
+
 open Printf
+
 
 (*
  * TODO: faire un module a part
@@ -36,6 +41,37 @@ type node = {
     cost        : int; (* g(x) *)
     prio        : int; (* h(x) *)
 }
+
+
+module Myqueue =
+struct
+    module BHeap = BatHeap.Make (struct
+        type t = node
+        let compare a b =
+            if a.prio < b.prio then -1
+            else if a.prio > b.prio then 1
+            else 0
+    end)
+
+(*     type t = BHeap.key *)
+
+    let empty = BHeap.empty
+    let is_empty q = BHeap.size q = 0
+
+(*     let remove = BHeap.remove *)
+(*     let get = BHeap.find *)
+
+    let create () = empty
+
+(*     let exists key map = BHeap.exists (fun key' _ -> key = key') map *)
+
+    let push = BHeap.add
+    let pop_min t =
+        let min = BHeap.find_min t in
+        min.grid, min, BHeap.del_min t
+end
+
+
 
 exception InvalidGridSize
 exception InvalidGrid
@@ -227,7 +263,7 @@ let for_each_neigh opened closed node neighbors =
                     new_cost < (Pqueue.get next.grid closed).cost then begin
                         let prio = new_cost + heuristic next.grid in
                         let closed = Pqueue.push node.grid { node with cost = new_cost } closed in
-                        let opened = Pqueue.push next.grid
+                        let opened = Myqueue.push 
                             { next with cost = new_cost; prio = prio } opened in
                         aux opened closed t
                 end
@@ -280,14 +316,14 @@ let solve grid =
         cost    = 0;
     }
     in
-    let opened = Pqueue.push grid start Pqueue.empty
+    let opened = Myqueue.push start Myqueue.empty
     and closed = Pqueue.create ()
     in
 
     let rec loop opened closed = 
-        if Pqueue.is_empty opened then print_endline "Finished... no solutions"
+        if Myqueue.is_empty opened then print_endline "Finished... no solutions"
         else begin
-            let key, node, opened = Pqueue.pop_min opened in
+            let key, node, opened = Myqueue.pop_min opened in
             let neigh = get_neighbors node.grid node.pos in
 (*             let closed = Pqueue.push key node closed in *)
 
@@ -323,7 +359,6 @@ let _ =
 (*     let grid = [| 8; 3; 4; 5; 7; 0; 2; 1; 6; |] in *)
 (*     let grid = [| 2; 0; 4; 6; 8; 1; 5; 3; 7; |] in *)
 (*     let grid = [| 0; 2; 8; 3; 6; 7; 5; 4; 1; |] in *)
-(*     let grid = [| 4; 5; 1; 7; 0; 6; 3; 8; 2; |] in *)
 (*     let grid = [| 6; 0; 5; 3; 2; 8; 4; 7; 1; |] in *)
 (*     let grid = [| 6; 3; 4; 7; 8; 5; 1; 0; 2; |] in *)
 (*     let grid = [| 1; 3; 5; 6; 7; 4; 8; 0; 2; |] in *)
@@ -334,8 +369,10 @@ let _ =
 (*     let grid = [| 7; 1; 5; 0; 3; 6; 8; 4; 2; |] in *)
 (*     let grid = [| 3; 4; 1; 0; 2; 7; 6; 5; 8; |] in *)
 
-    let grid = [| 5; 4; 2; 1; 3; 0; 7; 6; 8; |] in
+(*     let grid = [| 5; 4; 2; 1; 3; 0; 7; 6; 8; |] in *)
 (*     let grid = [| 4; 6; 1; 3; 2; 0; 7; 5; 8; |] in *)
+
+    let grid = [| 4; 5; 1; 7; 0; 6; 3; 8; 2; |] in
 
 (*
     let grid = [|
