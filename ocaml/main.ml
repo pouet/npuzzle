@@ -133,254 +133,66 @@ struct
         in
         aux moves
 
-
-
-(*
-    let create w grid pt = (w, grid, pt)
-
-    let size (w, _, _) = w * w
-    let width (w, _, _) = w
-    let grid (_, g, _) = g
-    let empty_case (_, _, pt) = pt
-
-    let print (w, grid, _) =
-        let sz = w * w in
-        let rec aux i =
-            printf "%d " grid.(i);
-            if i mod w = w - 1 then print_endline "";
-            if i < sz - 1 then aux (i + 1)
-        in
-        print_endline "------";
-        aux 0;
-        print_endline "------"
-
-    let is_in_grid (w, _, _) (line, col) =
-        line >= 0 && col >= 0 && line < w && col < w
-
-    let is_move_valid ((_, _, (line, col)) as grid) (movl, movc) =
-        is_in_grid grid (line + movl, col + movc)
-
-    let play_move ((w, grid, (line, col)) as orig) (movl, movc) =
-        let grid' = Array.copy grid in
-        let line', col' = (line + movl, col + movc) in
-
-        if is_in_grid orig (line', col') = false then raise InvalidMove;
-        grid'.(line * w + col) <- grid.(line' * w + col');
-        grid'.(line' * w + col') <- 0;
-        (w, grid', (line', col'))
-
-    (* TODO: rajouter tailles <> 3 *)
-    let is_solved (_, grid, _) =
-        let grid' = [| 1; 2; 3; 8; 0; 4; 7; 6; 5 |]
-        in
-        grid = grid'
-
-    let get_neighbors ((w, grid, (line, col)) as orig) =
-        let moves = [
-            (1, 0);  (0, 1);
-            (-1, 0); (0, -1);
-        ] in
-        let rec aux = function
-            | []        -> []
-            | hd :: tl  ->
-                    if is_move_valid orig hd then hd :: aux tl
-                    else aux tl
-        in
-        aux moves
-*)
-
 end
 
-
-class my_grid tab' cost' =
-    object (self : 'self)
-        val _size : int = Array.length tab'
-        method w = int_of_float (sqrt (float_of_int (Array.length tab')))
-        method tab = tab'
-        method empty =
-            let rec aux = function
-                | n when n >= _size     -> raise InvalidGrid
-                | n when self#tab.(n) = 0   -> n
-                | n                         -> aux (n + 1)
-            in
-            let n = aux 0 in
-            (n / self#w, n mod self#w)
-
-(*             TODO: A modifier *)
-        method goal = [| 1; 2; 3; 8; 0; 4; 7; 6; 5 |]
-        method g = cost'
-        method h =
-            let w = self#w in
-            let h_manhattan (ax, ay) (bx, by) =
-                abs (ax - bx) + abs (ay - by)
-            in
-            let search n =
-                let rec aux = function
-                    | i when i >= _size     -> raise InvalidGrid
-                    | i when self#tab.(i) <> n  -> aux (i + 1)
-                    | i                         -> i
-                in
-                aux 0
-            in
-            let rec calc acc = function
-                | n when n < _size      ->
-                        let tmp = search self#tab.(n) in
-                        printf "[%d-%d]" n tmp;
-                        let a = (tmp / w, tmp mod w)
-                        and b = (n / w, n mod w) in
-                        if self#tab.(n) = 0 then calc acc (n + 1)
-                        else calc (acc + h_manhattan a b) (n + 1)
-                | _                 -> print_endline ""; acc
-            in
-            calc 0 0
- 
-
-        method is_solved = self#tab = self#goal
-
-        method print =
-            let rec aux i =
-                printf "%d " self#tab.(i);
-                if i mod self#w = self#w - 1 then print_endline "";
-                if i < _size - 1 then aux (i + 1)
-            in
-            print_endline "------";
-            aux 0;
-            print_endline "------"
-
-        method is_in_grid (line, col) =
-            line >= 0 && col >= 0 && line < self#w && col < self#w
-
-        method is_move_valid (movl, movc) =
-            self#is_in_grid (fst self#empty + movl, snd self#empty + movc)
-
-        method play_move (movl, movc) =
-            let tab' = Array.copy self#tab in
-            let line, col = self#empty in
-            let line', col' = (line + movl, col + movc) in
-
-            if self#is_move_valid (movl, movc) = false then raise InvalidMove;
-
-            tab'.(line * self#w + col) <- self#tab.(line' * self#w + col');
-            tab'.(line' * self#w + col') <- 0;
-
-            new my_grid tab' (self#g + 1)
-
-
-        method get_neighbors =
-            let moves = [
-                (1, 0);  (0, 1);
-                (-1, 0); (0, -1);
-        ] in
-            let rec aux = function
-                | []        -> []
-                | hd :: tl  ->
-                        if self#is_move_valid hd then hd :: aux tl
-                        else aux tl
-            in
-            aux moves
-    end
-
-
 module Pqueue = BatHeap.Make (struct
-    type t = my_grid
+    type t = node
     let compare a b =
-        if a#h < b#h then -1
-        else if a#h > b#h then 1
+        if a.prio < b.prio then -1
+        else if a.prio > b.prio then 1
         else 0
 end)
 
-(* ------------------------------------------- *)
-
-(*
-let h_manhattan (ax, ay) (bx, by) =
-    abs (ax - bx) + abs (ay - by)
-
-let heuristic grid =
-    let search n =
-        let rec aux = function
-            | i when i >= grid#size -> raise InvalidGrid
-            | i when grid.(i) <> n  -> aux (i + 1)
-            | i                     -> i
-        in
-        aux 0
-    in
-    let rec calc acc = function
-        | n when n < w      ->
-                let tmp = search grid.(n) in
-                let a = (tmp / w, tmp mod w)
-                and b = (n / w, n mod w) in
-                if grid.(n) = 0 then calc acc (n + 1)
-                else calc (h_manhattan a b) (n + 1)
-        | _                 -> acc
-    in
-    calc 0 0
-
-*)
-(* ------------------------------------------- *)
 
 exception NotSolvable
 exception Finished
 
-(*
+
 let iter_neighbors opened closed neighbors =
     let rec aux opened = function
         | []        -> opened
         | hd :: tl  ->
-                let cost = 
-*)
+                try
+(*                    TODO: continuer   *)
+                    let next = Grid.play_move 
+                    Hashtbl.find closed hd.grid;
+                    aux opened tl
+                with Not_found -> aux opened tl
+    in
+    aux opened neighbors
+
 
 let rec astar opened closed =
-(*     if Pqueue.size opened = 0 then raise NotSolvable; *)
-(*
-    let prio, node = Pqueue.find_min opened in
+    if Pqueue.size opened = 0 then raise NotSolvable;
+
+    let node = Pqueue.find_min opened in
     let opened = Pqueue.del_min opened in
-*)
 
-(*     if Grid.is_solved node then raise Finished; *)
+    if Grid.is_solved node then raise Finished;
 
-(*     let neigh = Grid.get_neighbors node in *)
-
+    let neigh = Grid.get_neighbors node in
+    let opened = iter_neighbors opened closed neigh in
     ()
 
 
 let solve grid =
+
+    let opened = Pqueue.add grid Pqueue.empty in
+    let closed = Hashtbl.create 1024 in
+
+    Hashtbl.add closed grid.grid grid;
+
+(*
     Grid.print grid;
     let grid = Grid.play_move grid (-1, 0) in
     Grid.print grid;
-(*
-    let opened = Pqueue.add toto Pqueue.empty in
-    let closed = Hashtbl.create 1024 in
-
-    let tata = toto#play_move (0, -1) in
-    let tata = toto#play_move (0, -2) in
-    let opened = Pqueue.add tata opened in
-
-    let a = Pqueue.find_min opened in
-    a#print;
-    printf "%d\n" toto#h;
-    printf "%d\n" tata#h;
 *)
 
-(*     let tab = Grid.create 3 grid (1, 1) in *)
-(*     let tab = Grid.play_move tab (0, 1) in *)
-(*
-    Grid.print tab;
-
-    printf "%B\n" (Grid.is_move_valid tab (0, 0));
-
-    Hashtbl.add closed (Grid.grid tab) tab;
-*)
-
-
-
-(*
-    let prio, grid = Pqueue.find_min opened in
-    let a = Hashtbl.find closed grid in
-    Hashtbl.remove closed grid;
+    let grid = Pqueue.find_min opened in
+    let a = Hashtbl.find closed grid.grid in
+    Hashtbl.remove closed grid.grid;
     Grid.print a;
-*)
-(*     Array.iter (fun n -> printf "%d " n) grid; *)
-(*     printf "\n%d\n" prio; *)
+
     ()
 
 let () =
