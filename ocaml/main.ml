@@ -7,6 +7,7 @@ open Batteries
 open Printf
 
 
+exception InvalidGridSize
 exception InvalidGrid
 exception InvalidMove
 
@@ -21,6 +22,7 @@ type node = {
     pos         : point; (* empty case *)
     cost        : int; (* g(x) *)
     prio        : int; (* h(x) *)
+	f			: int; (* f(x) *)
 }
 
 let h_manhattan (ax, ay) (bx, by) =
@@ -53,9 +55,6 @@ struct
 
     type t = node
 
-    exception InvalidGridSize
-    exception InvalidGrid
-    exception InvalidMove
 
     let get_empty_case grid =
         let len = Array.length grid
@@ -79,9 +78,11 @@ struct
             pos = get_empty_case grid;
             cost = 0;
             prio = 0;
+			f = 0;
         }
         in
-        { tmp with prio = heuristic tmp }
+		let prio = heuristic tmp in
+        { tmp with prio = prio; f = prio; }
 
     let print grid =
         let rec aux i =
@@ -115,7 +116,8 @@ struct
             pos = (line', col');
             cost = grid.cost + 1;
         } in
-        { tmp with prio = heuristic tmp }
+		let prio = heuristic tmp in
+        { tmp with prio = prio; f = prio + tmp.cost; }
 
     let is_solved grid =
         grid.grid = grid.goal
@@ -147,40 +149,95 @@ end)
 exception NotSolvable
 exception Finished
 
+(*
+1 	Create a node containing the goal state node_goal
+2 	Create a node containing the start state node_start
+3 	Put node_start on the open list
+4 	while the OPEN list is not empty
+5 	{
+6 	Get the node off the open list with the lowest f and call it node_current
+7 	if node_current is the same state as node_goal we have found the solution; break from the while loop
+8 	    Generate each state node_successor that can come after node_current
+9 	    for each node_successor of node_current
+10 	    {
+11 	        Set the cost of node_successor to be the cost of node_current plus the cost to get to node_successor from node_current
+12 	        find node_successor on the OPEN list
+13 	        if node_successor is on the OPEN list but the existing one is as good or better then discard this successor and continue
+14 	        if node_successor is on the CLOSED list but the existing one is as good or better then discard this successor and continue
+15 	        Remove occurences of node_successor from OPEN and CLOSED
+16 	        Set the parent of node_successor to node_current
+17 	        Set h to be the estimated distance to node_goal (Using the heuristic function)
+18 	         Add node_successor to the OPEN list
+19 	    }
+20 	    Add node_current to the CLOSED list
+21 	} 
+*)
 
-let iter_neighbors opened closed neighbors =
+let iter_neighbors opened closed node neighbors =
+	let opened' = Pqueue.to_list opened in
+	let rec exist node = function
+		| []		-> false
+		| hd :: tl	->
+					if hd.grid = node.grid && hd.f < node.f then true
+					else exist node tl
+	in
+
     let rec aux opened = function
         | []        -> opened
         | hd :: tl  ->
+				let next = Grid.play_move node hd in
                 try
-(*                    TODO: continuer   *)
-                    let next = Grid.play_move 
-                    Hashtbl.find closed hd.grid;
-                    aux opened tl
-                with Not_found -> aux opened tl
+                    let tmp = Hashtbl.find closed next.grid in
+					if next.cost < tmp.cost then raise Not_found;
+					if exist next opened' = false then raise Not_found;
+					aux opened tl
+                with Not_found ->
+					let opened = Pqueue.add next opened in
+					aux opened tl
     in
     aux opened neighbors
+
+let solved closed node =
+	let rec get_answer parent =
+		if parent.grid <> parent.parent then begin
+			let node = Hashtbl.find closed parent.parent in
+			get_answer node;
+			print_endline "------------------------------------------";
+			Grid.print node;
+			Grid.print parent;
+			print_endline "------------------------------------------";
+		end
+		else
+			Grid.print node
+	in
+	get_answer node;
+	raise Finished
 
 
 let rec astar opened closed =
     if Pqueue.size opened = 0 then raise NotSolvable;
 
+	print_int (Pqueue.size opened);
+
     let node = Pqueue.find_min opened in
     let opened = Pqueue.del_min opened in
 
-    if Grid.is_solved node then raise Finished;
+
+    if Grid.is_solved node then solved closed node;
 
     let neigh = Grid.get_neighbors node in
-    let opened = iter_neighbors opened closed neigh in
-    ()
-
+    let opened = iter_neighbors opened closed node neigh in
+	Hashtbl.add closed node.grid node;
+	astar opened closed
 
 let solve grid =
 
     let opened = Pqueue.add grid Pqueue.empty in
     let closed = Hashtbl.create 1024 in
 
+(*
     Hashtbl.add closed grid.grid grid;
+*)
 
 (*
     Grid.print grid;
@@ -188,12 +245,26 @@ let solve grid =
     Grid.print grid;
 *)
 
+(*
     let grid = Pqueue.find_min opened in
     let a = Hashtbl.find closed grid.grid in
     Hashtbl.remove closed grid.grid;
     Grid.print a;
+*)
 
-    ()
+		astar opened closed
+(*
+	try
+		astar opened closed
+    with
+		| Finished -> print_endline "Finished"
+		| NotSolvable -> print_endline "Not solvable"
+		| InvalidGrid ->  print_endline "Invalid grid"
+		| InvalidGridSize ->  print_endline "Invalid grid size"
+		| InvalidMove ->  print_endline "Invalid move"
+		| Not_found -> print_endline "Not found"
+		| _ -> print_endline "error"
+*)
 
 let () =
 (*     let grid = [| 4; 5; 1; 7; 0; 6; 3; 8; 2; |] in *)
@@ -203,5 +274,6 @@ let () =
         7; 6; 0
         |]
     in
+(*    let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in *)
     let grid = Grid.create grid in
     solve grid
