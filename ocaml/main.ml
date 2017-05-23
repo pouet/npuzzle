@@ -6,6 +6,9 @@ exception InvalidGridSize
 exception InvalidGrid
 exception InvalidMove
 
+exception NotSolvable
+exception Finished
+
 
 type point = int * int
 
@@ -61,6 +64,19 @@ struct
         in
         let n = aux 0 in
         (n / w, n mod w)
+
+    let get_goal size =
+        let moves = [
+			(1, 0); (0, 1); (-1, 0); (0, -1);
+		] in
+        let tab = Array.create size 0 in
+        let w = int_of_float (sqrt (float_of_int (Array.length grid))) in
+		let loop dir (line, col) =
+			let ml, mc = moves.(dir) in
+			let line', col' = (line + ml, col + mc) in
+			if line' < 0 || col' < 0 || line' >= w || col' >= w then loop ((dir + 1) mod 4) (line, col)
+			else begin
+			end
 
     let create grid =
         let tmp = {
@@ -139,85 +155,17 @@ module Pqueue = BatHeap.Make (struct
 end)
 
 
-exception NotSolvable
-exception Finished
-
-(*
-1 	Create a node containing the goal state node_goal
-2 	Create a node containing the start state node_start
-3 	Put node_start on the open list
-4 	while the OPEN list is not empty
-5 	{
-6 	Get the node off the open list with the lowest f and call it node_current
-7 	if node_current is the same state as node_goal we have found the solution; break from the while loop
-8 	    Generate each state node_successor that can come after node_current
-9 	    for each node_successor of node_current
-10 	    {
-11 	        Set the cost of node_successor to be the cost of node_current plus the cost to get to node_successor from node_current
-12 	        find node_successor on the OPEN list
-13 	        if node_successor is on the OPEN list but the existing one is as good or better then discard this successor and continue
-14 	        if node_successor is on the CLOSED list but the existing one is as good or better then discard this successor and continue
-15 	        Remove occurences of node_successor from OPEN and CLOSED
-16 	        Set the parent of node_successor to node_current
-17 	        Set h to be the estimated distance to node_goal (Using the heuristic function)
-18 	         Add node_successor to the OPEN list
-19 	    }
-20 	    Add node_current to the CLOSED list
-21 	} 
-*)
-
 let iter_neighbors opened closed node neighbors =
-(*
-	let opened' = Pqueue.to_list opened in
-
-	let get_opened node =
-        try
-            Some (List.find (fun n -> n.grid = node.grid && n.f < node.f) opened')
-        with Not_found  -> None
-	in
-*)
-
-(*
-    let get_closed node =
-        try
-            let tmp = Hashtbl.find closed node.grid in
-(*             if tmp.f < node.f then raise Not_found; *)
-            Some tmp
-        with Not_found -> None
-    in
-*)
-
-(*
-    let remove_closed closed node =
-        match node with
-        | None      -> ()
-        | Some n    -> Hashtbl.remove closed n.grid
-    in
-*)
-
-(*
-    let remove_opened opened node =
-        match node with
-        | None      -> opened
-        | Some n    -> Pqueue.of_enum (filter ((!=) n) (Pqueue.enum opened))
-    in
-*)
-
     let rec aux opened = function
         | []        -> opened
         | hd :: tl  ->
-(*                 let add () = *)
                     try
                         Hashtbl.find closed node.grid;
                         aux opened tl
                     with Not_found ->
                             let next = Grid.play_move node hd in
-(*                             let op = get_opened next in *)
-(*                             let opened = remove_opened opened op in *)
                             let opened = Pqueue.add next opened in
                             aux opened tl
-(*                 in *)
-(*                 add () *)
     in
     aux opened neighbors
 
@@ -261,7 +209,7 @@ let solve start =
 		| Not_found -> print_endline "Not found"
 
 let () =
-(*     let grid = [| 4; 5; 1; 7; 0; 6; 3; 8; 2; |] in *)
+    let grid = [| 4; 5; 1; 7; 0; 6; 3; 8; 2; |] in
 (*
     let grid = [|
         1; 2; 3;
@@ -278,6 +226,6 @@ let () =
         |]
     in
 *)
-    let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in
+(*     let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in *)
     let grid = Grid.create grid in
     solve grid
