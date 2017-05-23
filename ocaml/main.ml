@@ -1,9 +1,4 @@
-(*
-#use "/Users/nchrupal/.opam/system/lib/toplevel/topfind"
-#require "batteries"
-*)
 open Batteries
-
 open Printf
 
 
@@ -11,20 +6,21 @@ exception InvalidGridSize
 exception InvalidGrid
 exception InvalidMove
 
+
 type point = int * int
 
 type node = {
     sz          : int;
     w           : int;
     grid        : int array;
-    parent      : int array;
-    pp          : point list;
+    parent          : point list;
     goal        : int array;
     pos         : point; (* empty case *)
     cost        : int; (* g(x) *)
     prio        : int; (* h(x) *)
 	f			: int; (* f(x) *)
 }
+
 
 let h_manhattan (ax, ay) (bx, by) =
     abs (ax - bx) + abs (ay - by)
@@ -52,8 +48,6 @@ let heuristic grid =
 
 module Grid =
 struct
-    (* width * grid * emptycase *)
-
     type t = node
 
 
@@ -73,9 +67,7 @@ struct
             sz = Array.length grid;
             w = int_of_float (sqrt (float_of_int (Array.length grid)));
             grid = grid;
-            parent = grid;
-            pp = [];
-(*             goal = [| 1; 2; 3; 4; 5; 6; 7; 8; 0 |]; *)
+            parent = [];
             goal = [| 1; 2; 3; 8; 0; 4; 7; 6; 5 |];
             pos = get_empty_case grid;
             cost = 0;
@@ -114,12 +106,11 @@ struct
         grid'.(line' * grid.w + col') <- 0;
         let tmp = { grid with
             grid = grid';
-            parent = grid.grid;
             pos = (line', col');
             cost = grid.cost + 1;
         } in
 		let prio = heuristic tmp in
-        { tmp with prio = prio; f = prio + tmp.cost; pp = (-movl, -movc) :: grid.pp }
+        { tmp with prio = prio; f = prio + tmp.cost; parent = (-movl, -movc) :: grid.parent }
 
     let is_solved grid =
         grid.grid = grid.goal
@@ -176,23 +167,17 @@ exception Finished
 *)
 
 let iter_neighbors opened closed node neighbors =
-	let opened' = Pqueue.to_list opened in
-
 (*
-    let rec del_one node = function
-        | []        -> []
-        | hd :: tl  ->
-                if hd.grid = node.grid then del_one node tl
-                else hd :: del_one node tl
-    in
-*)
+	let opened' = Pqueue.to_list opened in
 
 	let get_opened node =
         try
             Some (List.find (fun n -> n.grid = node.grid && n.f < node.f) opened')
         with Not_found  -> None
 	in
+*)
 
+(*
     let get_closed node =
         try
             let tmp = Hashtbl.find closed node.grid in
@@ -200,105 +185,70 @@ let iter_neighbors opened closed node neighbors =
             Some tmp
         with Not_found -> None
     in
+*)
 
+(*
     let remove_closed closed node =
         match node with
         | None      -> ()
         | Some n    -> Hashtbl.remove closed n.grid
     in
+*)
 
+(*
     let remove_opened opened node =
         match node with
         | None      -> opened
         | Some n    -> Pqueue.of_enum (filter ((!=) n) (Pqueue.enum opened))
     in
+*)
 
-    (* 9 *)
     let rec aux opened = function
         | []        -> opened
         | hd :: tl  ->
-                (* 11 *)
-				let next = Grid.play_move node hd in
-                (* 12/13/14 *)
-                let op = get_opened next in
-                let cl = get_closed next in
-                (* TODO: improve this part *)
-                (* 18 *)
-                let add = function
-                    | Some _ -> aux opened tl
-                    | None   ->
-                            (* 15 *)
-                            let opened = remove_opened opened op in
-                            remove_closed closed cl;
+(*                 let add () = *)
+                    try
+                        Hashtbl.find closed node.grid;
+                        aux opened tl
+                    with Not_found ->
+                            let next = Grid.play_move node hd in
+(*                             let op = get_opened next in *)
+(*                             let opened = remove_opened opened op in *)
                             let opened = Pqueue.add next opened in
                             aux opened tl
-                in
-                add cl
+(*                 in *)
+(*                 add () *)
     in
     aux opened neighbors
 
 let solved closed node =
-(*
-	let rec get_answer node =
-		if node.grid <> node.parent then begin
-
-			print_endline "------------------------------------------";
-			Grid.print node;
-
-(*             printf "%d\n" (Hashtbl.length closed); *)
-			let parent = Hashtbl.find  closed node.parent in
-			Grid.print parent;
-			print_endline "------------------------------------------";
- 			get_answer parent;
-			print_endline "------------------------------------------";
-(* 			Grid.print node; *)
-			Grid.print node;
-			print_endline "------------------------------------------";
-		end
-		else
-			Grid.print node
-	in
- 	get_answer node;
-    Grid.print node;
-*)
     let grid = Grid.create node.grid in
     let acc = ref [ grid ] in
     List.fold_left (fun grid (a, b) ->
         let tmp = Grid.play_move grid (a, b) in
         acc := tmp :: !acc;
-        tmp) grid node.pp;
+        tmp) grid node.parent |> ignore;
     List.iter (fun n -> Grid.print n) !acc;
 	raise Finished
 
 
 let rec astar opened closed =
-    (* 4 *)
     if Pqueue.size opened = 0 then raise NotSolvable;
 
-(*  	printf "(%d %d)" (Pqueue.size opened) (Hashtbl.length closed); *)
-
-    (* 5/6 *)
     let node = Pqueue.find_min opened in
     let opened = Pqueue.del_min opened in
 
-    (* 7 *)
     if Grid.is_solved node then solved closed node;
 
-    (* 8 *)
     let neigh = Grid.get_neighbors node in
-    (* 9/10 *)
     let opened = iter_neighbors opened closed node neigh in
-    (* 20 *)
 	Hashtbl.add closed node.grid node;
 	astar opened closed
 
 let solve start =
 
-    (* 3 *)
     let opened = Pqueue.add start Pqueue.empty in
     let closed = Hashtbl.create 1024 in
-
-(*     astar opened closed *)
 
 	try
 		astar opened closed
@@ -329,6 +279,5 @@ let () =
     in
 *)
     let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in
-    (* 1-2 *)
     let grid = Grid.create grid in
     solve grid
