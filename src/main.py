@@ -224,7 +224,9 @@ if __name__ == "__main__":
 	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. Size must be > 3 and <= 7 (Not used if a filename is specified).")
 	parser.add_argument("--solvable", action="store_true", default=False, help="Create a solvable puzzle.")
 	parser.add_argument("--unsolvable", action="store_true", default=False, help="Create an unsolvable puzzle.")
-	parser.add_argument("--manhattan", action="store_true", default=False, help="Use manhattan distance for heuristic function (default).")
+	parser.add_argument("--manhattan", "--m",  action="store_true", default=False, help="Use manhattan distance for heuristic function.")
+	parser.add_argument("--linearconflict", "--lc", action="store_true", default=False, help="Use linear conflict as heuristic function.")
+	#parser.add_argument("--manhattan", action="store_true", default=False, help="Use manhattan distance for heuristic function (default).")
 	parser.add_argument("-g", "--graphics", action="store_true", default=False, help="Create a graphic version of the solution.")
 	parser.add_argument("-o", "--ocaml", action="store_true", default=False, help="Send the puzzle in stdout in ocaml format")
 
@@ -240,6 +242,15 @@ if __name__ == "__main__":
 		solvable = False
 
 	'''Traitement sur les fonctions heuristics'''
+	choice_h = 0
+	if not args.manhattan and not args.linearconflict:
+		leave('You must choose at least one heuristic function.')
+	elif args.manhattan and args.linearconflict:
+		leave('You must choose only one heuristic function.')
+	elif args.manhattan:
+		choice_h = 0
+	elif args.linearconflict:
+		choice_h = 1
 
 	if args.file == None and args.size == None:
 		leave('Must specify a filename or at least a size to generate a random puzzle.')
@@ -281,7 +292,7 @@ if __name__ == "__main__":
 		print_puzzle(puzzle, size)
 	if is_solvable(puzzle, size) == False:
 		leave('This puzzle can\'t be solved.')
-	res = py_algo()
+	res = py_algo(puzzle, choice_h)
 	'''Gather the solution from the function solve and set it in the constructor
 	@TODO'''
 	if args.graphics:
