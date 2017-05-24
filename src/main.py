@@ -282,9 +282,8 @@ if __name__ == "__main__":
 	if is_solvable(puzzle, size) == False:
 		leave('This puzzle can\'t be solved.')
 	res = py_algo()
-	print res
 	'''Gather the solution from the function solve and set it in the constructor
 	@TODO'''
 	if args.graphics:
-		#game = Game(puzzle, size)
-		game = Game([6, 12, 5, 11, 13, 8, 1, 7, 9, 2, 3, 10, 14, 4, 15, 0], 4, res)
+		game = Game(puzzle, size, res)
+		#game = Game([6, 12, 5, 11, 13, 8, 1, 7, 9, 2, 3, 10, 14, 4, 15, 0], 4, res)
