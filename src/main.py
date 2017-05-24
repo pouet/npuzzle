@@ -1,5 +1,5 @@
 import random, os.path, argparse
-#import penis
+from algo import *
 from graphique import *
 from time import sleep
 
@@ -281,9 +281,10 @@ if __name__ == "__main__":
 		print_puzzle(puzzle, size)
 	if is_solvable(puzzle, size) == False:
 		leave('This puzzle can\'t be solved.')
-	#penis.solve(size, puzzle, puzzle.index(0))
+	res = py_algo()
+	print res
 	'''Gather the solution from the function solve and set it in the constructor
 	@TODO'''
-	#if args.graphics:
+	if args.graphics:
 		#game = Game(puzzle, size)
-		#game = Game([6, 12, 5, 11, 13, 8, 1, 7, 9, 2, 3, 10, 14, 4, 15, 0], 4, 'BDDBBGHHDHGBDDBBGGHDDBGGGHHDBBGHHHDBGHDDDBGGBBGHHH')
+		game = Game([6, 12, 5, 11, 13, 8, 1, 7, 9, 2, 3, 10, 14, 4, 15, 0], 4, res)
