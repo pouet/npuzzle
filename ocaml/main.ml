@@ -16,13 +16,73 @@ type node = {
     sz          : int;
     w           : int;
     grid        : int array;
-    parent          : point list;
+    parent      : point list;
     goal        : int array;
     pos         : point; (* empty case *)
     cost        : int; (* g(x) *)
     prio        : int; (* h(x) *)
 	f			: int; (* f(x) *)
 }
+
+(*
+    2 tableau lignes / colonnes
+    On compte la distance pour chaque ligne et colonne en fonction de sa
+    position pour aller a la destination
+    Une fois comptee, on verifie que pour chaque ligne et colonne les 2 overlap
+    ou pas
+*)
+
+let linear_conflict grid =
+    let cols = Array.make grid.sz 0
+    and rows = Array.make grid.sz 0
+    and w = grid.w
+    in
+    let array_index grid sz n =
+        let rec aux i =
+            if i >= sz then raise Not_found;
+            if grid.(i) = n then i
+            else aux (i + 1)
+        in
+        aux 0
+    in
+    let rec cpt n =
+        if n < grid.sz then begin
+            let idx = array_index grid.grid grid.sz n
+            and idx' = array_index grid.goal grid.sz n in
+            let line, col = (idx / w, idx mod w)
+            and line', col' = (idx' / w, idx' mod w) in
+            if line = line' then rows.(idx) <- col' - col;
+            if col = col' then cols.(col * w + line) <- line' - line;
+            cpt (n + 1)
+        end
+    in
+    cpt 0;
+    let count acc n =
+        let rec count' acc i j =
+            if i >= w then acc
+            else if j >= w then count' acc (i + 1) 0
+            else begin
+                let cnt = rows.(i) + rows.(j) in
+                let acc = acc + (if rows.(i) <> 0 && cnt = 0 then 1 else 0) in
+                let cnt = cols.(i) + cols.(j) in
+                let acc = acc + (if cols.(i) <> 0 && cnt = 0 then 1 else 0) in
+(*                 if rows.(i) <> 0 && cnt = 0 then printf "collision : [%d %d] (%d, %d) %d\n" i j rows.(i) rows.(j) cnt; *)
+(*                 let cnt = cols.(i) + cols.(j) in *)
+(*                 printf "%d %d - %4d %4d\n" i j cols.(i) cols.(j); *)
+(*                 if cols.(i) <> 0 && cnt = 0 then printf "collision : [%d %d] (%d, %d) %d\n" i j cols.(i) cols.(j) cnt; *)
+                count' acc i (j + 1)
+            end
+        in
+        if n < w then count' 0 0 0
+        else acc
+    in
+    count 0 0
+
+(*
+let l_conflict grid =
+    let goal = grid.goal in
+    let sz = grid.sz
+*)
 
 
 let h_manhattan (ax, ay) (bx, by) =
@@ -47,7 +107,7 @@ let heuristic grid =
                 else calc (acc + h_manhattan a b) (n + 1)
         | _                     -> acc
     in
-    calc 0 0
+    calc 0 0 + 2 * linear_conflict grid
 
 module Grid =
 struct
@@ -66,17 +126,23 @@ struct
         (n / w, n mod w)
 
     let get_goal size =
-        let moves = [
-			(1, 0); (0, 1); (-1, 0); (0, -1);
-		] in
+        let moves = [| (0, 1); (1, 0); (0, -1); (-1, 0); |] in
         let tab = Array.create size 0 in
-        let w = int_of_float (sqrt (float_of_int (Array.length grid))) in
-		let loop dir (line, col) =
+        let w = int_of_float (sqrt (float_of_int size))
+        in
+		let rec loop dir n (line, col) =
 			let ml, mc = moves.(dir) in
 			let line', col' = (line + ml, col + mc) in
-			if line' < 0 || col' < 0 || line' >= w || col' >= w then loop ((dir + 1) mod 4) (line, col)
-			else begin
+			if n < size then begin
+                tab.(line * w + col) <- n;
+                if line' < 0 || col' < 0 || line' >= w || col' >= w || tab.(line' * w + col') <> 0 then
+                    loop ((dir + 1) mod 4) n (line, col)
+                else
+                    loop dir (n + 1) (line', col')
 			end
+            else tab
+        in
+        loop 0 1 (0, 0)
 
     let create grid =
         let tmp = {
@@ -84,7 +150,7 @@ struct
             w = int_of_float (sqrt (float_of_int (Array.length grid)));
             grid = grid;
             parent = [];
-            goal = [| 1; 2; 3; 8; 0; 4; 7; 6; 5 |];
+            goal = get_goal (Array.length grid);
             pos = get_empty_case grid;
             cost = 0;
             prio = 0;
@@ -228,4 +294,4 @@ let () =
 *)
 (*     let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in *)
     let grid = Grid.create grid in
-    solve grid
+    solve grid;
