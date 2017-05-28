@@ -7,7 +7,7 @@ exception InvalidGrid
 exception InvalidMove
 
 exception NotSolvable
-exception Finished
+exception Finished of string
 
 
 type point = int * int
@@ -238,12 +238,24 @@ let iter_neighbors opened closed node neighbors =
 let solved closed node =
     let grid = Grid.create node.grid in
     let acc = ref [ grid ] in
+    let res = ref "" in
+
+    let get_dir = function
+        | (1, 0)    -> "H"
+        | (-1, 0)   -> "B"
+        | (0, 1)    -> "G"
+        | (0, -1)   -> "D"
+        | _         -> raise InvalidMove
+    in
+
     List.fold_left (fun grid (a, b) ->
         let tmp = Grid.play_move grid (a, b) in
         acc := tmp :: !acc;
+        res := (get_dir (a, b)) ^ !res;
         tmp) grid node.parent |> ignore;
     List.iter (fun n -> Grid.print n) !acc;
-	raise Finished
+    print_endline !res;
+	raise (Finished !res)
 
 
 let rec astar opened closed =
@@ -267,13 +279,24 @@ let solve start =
 	try
 		astar opened closed
     with
-		| Finished -> print_endline "Finished"
+        | Finished res -> print_endline ("Finished with : " ^ res); res
+        | _ -> ""
+(*
 		| NotSolvable -> print_endline "Not solvable"
 		| InvalidGrid ->  print_endline "Invalid grid"
 		| InvalidGridSize ->  print_endline "Invalid grid size"
 		| InvalidMove ->  print_endline "Invalid move"
 		| Not_found -> print_endline "Not found"
+*)
 
+let c_interface grid heuristic =
+    let grid = Grid.create grid in
+    solve grid
+
+let () =
+      Callback.register "c_interface" c_interface
+
+(*
 let () =
     let grid = [| 4; 5; 1; 7; 0; 6; 3; 8; 2; |] in
 (*
@@ -294,4 +317,5 @@ let () =
 *)
 (*     let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in *)
     let grid = Grid.create grid in
-    solve grid;
+    solve grid
+*)

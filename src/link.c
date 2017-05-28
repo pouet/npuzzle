@@ -22,7 +22,7 @@
 #include <caml/callback.h>
 #include <caml/printexc.h>
 
-char *hello_closure(int *tab, int size, int choice)
+char *c_interface(int *tab, int size, int choice)
 {
 	char * args = NULL;
 	static value * closure_f = NULL;
@@ -30,7 +30,7 @@ char *hello_closure(int *tab, int size, int choice)
 	caml_startup(&args);
 
 	if (closure_f == NULL) {
-		closure_f = caml_named_value("Hello callback");
+		closure_f = caml_named_value("Ocaml interface");
 	}
 //	caml_callback(*closure_f, Val_unit);
 //  caml_callback(*closure_f, Val_int(42));
@@ -62,7 +62,7 @@ static PyObject* py_algo(PyObject* self, PyObject* args)
 	{
 		tab[i] = (int)PyLong_AsLong(PyList_GetItem(lst, i));
 	}
-	hello_closure(tab, (int)size, choice);
+	s = c_interface(tab, size, choice);
 	return Py_BuildValue("s", s);
 }
 
