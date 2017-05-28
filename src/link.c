@@ -10,8 +10,39 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <Python.h>
 #include <stdio.h>
+#include <Python.h>
+
+#include <caml/mlvalues.h>
+#include <caml/callback.h>
+#include <caml/alloc.h>
+
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/callback.h>
+#include <caml/printexc.h>
+
+char *hello_closure(int *tab, int size, int choice)
+{
+	char * args = NULL;
+	static value * closure_f = NULL;
+
+	caml_startup(&args);
+
+	if (closure_f == NULL) {
+		closure_f = caml_named_value("Hello callback");
+	}
+//	caml_callback(*closure_f, Val_unit);
+//  caml_callback(*closure_f, Val_int(42));
+	value toto = caml_alloc(size, size);
+	for (int i = 0; i < size; i++) {
+		Store_field(toto, i, Val_int(tab[i]));
+	}
+	value res = caml_callback2(*closure_f, toto, Val_int(choice));
+
+	puts(String_val(res));
+	return String_val(res);
+}
 
 /*
  * Function to be called from Python
@@ -31,6 +62,7 @@ static PyObject* py_algo(PyObject* self, PyObject* args)
 	{
 		tab[i] = (int)PyLong_AsLong(PyList_GetItem(lst, i));
 	}
+	hello_closure(tab, (int)size, choice);
 	return Py_BuildValue("s", s);
 }
 
