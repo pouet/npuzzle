@@ -226,7 +226,7 @@ if __name__ == "__main__":
 	parser.add_argument("--unsolvable", action="store_true", default=False, help="Create an unsolvable puzzle.")
 	parser.add_argument("--manhattan", "--m",  action="store_true", default=False, help="Use manhattan distance for heuristic function.")
 	parser.add_argument("--linearconflict", "--lc", action="store_true", default=False, help="Use linear conflict as heuristic function.")
-	#parser.add_argument("--manhattan", action="store_true", default=False, help="Use manhattan distance for heuristic function (default).")
+	parser.add_argument("--euclidean","--e", action="store_true", default=False, help="Use euclidean distance for heuristic function.")
 	parser.add_argument("-g", "--graphics", action="store_true", default=False, help="Create a graphic version of the solution.")
 	parser.add_argument("-o", "--ocaml", action="store_true", default=False, help="Send the puzzle in stdout in ocaml format")
 
@@ -243,14 +243,16 @@ if __name__ == "__main__":
 
 	'''Traitement sur les fonctions heuristics'''
 	choice_h = 0
-	if not args.manhattan and not args.linearconflict:
+	if not args.manhattan and not args.linearconflict and not args.euclidean:
 		leave('You must choose at least one heuristic function.')
-	elif args.manhattan and args.linearconflict:
+	elif (args.manhattan and args.linearconflict) or (args.manhattan and args.euclidean) or (args.linearconflict and args.euclidean):
 		leave('You must choose only one heuristic function.')
 	elif args.manhattan:
 		choice_h = 0
 	elif args.linearconflict:
 		choice_h = 1
+        elif args.euclidean:
+            choice_h = 2
 
 	if args.file == None and args.size == None:
 		leave('Must specify a filename or at least a size to generate a random puzzle.')
@@ -293,6 +295,7 @@ if __name__ == "__main__":
 	if is_solvable(puzzle, size) == False:
 		leave('This puzzle can\'t be solved.')
 	res = py_algo(puzzle, choice_h)
+	print res
 	'''Gather the solution from the function solve and set it in the constructor
 	@TODO'''
 	if args.graphics:
