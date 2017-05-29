@@ -6,7 +6,7 @@
 /*   By: grisbour <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/05/24 15:22:44 by grisbour          #+#    #+#             */
-/*   Updated: 2017/05/24 16:45:37 by grisbour         ###   ########.fr       */
+/*   Updated: 2017/05/29 16:00:28 by grisbour         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ char *c_interface(int *tab, int size, int choice)
  */
 static PyObject* py_algo(PyObject* self, PyObject* args)
 {
-	char *s = "BDDBBGHHDHGBDDBBGGHDDBGGGHHDBBGHHHDBGHDDDBGGBBGHHH";
+	char *s;
 	int *tab;
 	int choice = -1;
 	long size;
