@@ -243,6 +243,7 @@ module Pqueue = BatHeap.Make (struct
         else 0
 end)
 
+(* ------------------------------ *)
 
 let iter_neighbors opened closed node neighbors =
     let rec aux opened = function
