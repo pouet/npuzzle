@@ -1,14 +1,18 @@
-(* open Batteries *)
 open Printf
-
 
 exception InvalidGridSize
 exception InvalidGrid
 exception InvalidMove
+exception InvalidHeuristic
 
 exception NotSolvable
 exception Finished of string
 
+
+type hrst =
+    | Manhattan
+    | LinearConflict
+    | Euclidean
 
 type point = int * int
 
@@ -22,7 +26,17 @@ type node = {
     cost        : int; (* g(x) *)
     prio        : int; (* h(x) *)
 	f			: int; (* f(x) *)
+    heuristic   : hrst;
 }
+
+(* ------------------------------ *)
+
+let get_heuristic = function
+    | 0     -> Manhattan
+    | 1     -> LinearConflict
+    | 2     -> Euclidean
+    | _     -> raise InvalidHeuristic
+
 
 (*
     2 tableau lignes / colonnes
@@ -78,25 +92,24 @@ let linear_conflict grid =
     in
     count 0 0
 
-(*
-let l_conflict grid =
-    let goal = grid.goal in
-    let sz = grid.sz
-*)
-
-
 let h_manhattan (ax, ay) (bx, by) =
     abs (ax - bx) + abs (ay - by)
 
-let search grid n =
-    let rec aux = function
-        | i when i >= grid.sz        -> raise InvalidGrid
-        | i when grid.goal.(i) <> n  -> aux (i + 1)
-        | i                          -> (i / grid.w, i mod grid.w)
-    in
-    aux 0
+let h_euclidean (ax, ay) (bx, by) =
+    let tmp = (ax - bx)
+    and tmp' = (ay - by) in
+    let sq = (tmp * tmp) + (tmp' * tmp') in
+    int_of_float (sqrt (float_of_int sq))
 
-let heuristic grid =
+let apply_heuristic grid f =
+    let search grid n =
+        let rec aux = function
+            | i when i >= grid.sz        -> raise InvalidGrid
+            | i when grid.goal.(i) <> n  -> aux (i + 1)
+            | i                          -> (i / grid.w, i mod grid.w)
+        in
+        aux 0
+    in
     let rec calc acc = function
         | n when n < grid.sz    ->
                 let a = search grid grid.grid.(n)
@@ -104,10 +117,19 @@ let heuristic grid =
 (*                 printf "[%d (%d-%d)-(%d-%d)]\n" grid.grid.(n) (fst a) (snd a)
  *                 (fst b) (snd b); *)
                 if grid.grid.(n) = 0 then calc acc (n + 1)
-                else calc (acc + h_manhattan a b) (n + 1)
+                else calc (acc + f a b) (n + 1)
         | _                     -> acc
     in
-    calc 0 0 + 2 * linear_conflict grid
+    calc 0 0
+
+let heuristic grid =
+    match grid.heuristic with
+    | Manhattan         -> apply_heuristic grid h_manhattan
+    | LinearConflict    -> apply_heuristic grid h_manhattan + (2 * linear_conflict grid)
+    | Euclidean         -> apply_heuristic grid h_euclidean
+
+
+(* ------------------------------ *)
 
 module Grid =
 struct
@@ -144,7 +166,7 @@ struct
         in
         loop 0 1 (0, 0)
 
-    let create grid =
+    let create grid h =
         let tmp = {
             sz = Array.length grid;
             w = int_of_float (sqrt (float_of_int (Array.length grid)));
@@ -155,6 +177,7 @@ struct
             cost = 0;
             prio = 0;
 			f = 0;
+            heuristic = h;
         }
         in
 		let prio = heuristic tmp in
@@ -167,7 +190,7 @@ struct
             if i < grid.sz - 1 then aux (i + 1)
         in
         print_endline "------";
-        printf "prio : %d | cost : %d\n" grid.prio grid.cost;
+(*         printf "prio : %d | cost : %d\n" grid.prio grid.cost; *)
         aux 0;
         print_endline "------"
 
@@ -235,8 +258,8 @@ let iter_neighbors opened closed node neighbors =
     in
     aux opened neighbors
 
-let solved closed node =
-    let grid = Grid.create node.grid in
+let solved opened closed node n =
+    let grid = Grid.create node.grid node.heuristic in
     let acc = ref [ grid ] in
     let res = ref "" in
 
@@ -253,23 +276,25 @@ let solved closed node =
         acc := tmp :: !acc;
         res := (get_dir (a, b)) ^ !res;
         tmp) grid node.parent |> ignore;
+    printf "Numbers of nodes selected in open    : %d\n" n;
+    printf "Maximum number of states represented : %d\n" (Hashtbl.length closed + Pqueue.size opened);
+    printf "Number of moves                      : %d\n" (List.length !acc);
     List.iter (fun n -> Grid.print n) !acc;
-    print_endline !res;
 	raise (Finished !res)
 
 
-let rec astar opened closed =
+let rec astar opened closed n =
     if Pqueue.size opened = 0 then raise NotSolvable;
 
     let node = Pqueue.find_min opened in
     let opened = Pqueue.del_min opened in
 
-    if Grid.is_solved node then solved closed node;
+    if Grid.is_solved node then solved opened closed node n;
 
     let neigh = Grid.get_neighbors node in
     let opened = iter_neighbors opened closed node neigh in
 	Hashtbl.add closed node.grid node;
-	astar opened closed
+	astar opened closed (n + 1)
 
 let solve start =
 
@@ -277,57 +302,20 @@ let solve start =
     let closed = Hashtbl.create 1024 in
 
 	try
-		astar opened closed
+		astar opened closed 0
     with
         | Finished res -> print_endline ("Finished with : " ^ res); res
+        | NotSolvable -> print_endline "Not solvable"; ""
+        | InvalidGrid ->  print_endline "Invalid grid"; ""
+        | InvalidGridSize ->  print_endline "Invalid grid size"; ""
+        | InvalidMove ->  print_endline "Invalid move"; ""
+        | InvalidHeuristic ->  print_endline "Invalid move"; ""
+        | Not_found -> print_endline "Not found"; ""
         | _ -> ""
-(*
-		| NotSolvable -> print_endline "Not solvable"
-		| InvalidGrid ->  print_endline "Invalid grid"
-		| InvalidGridSize ->  print_endline "Invalid grid size"
-		| InvalidMove ->  print_endline "Invalid move"
-		| Not_found -> print_endline "Not found"
-*)
 
-(* let c_interface : int array -> int -> string = fun grid heuristic -> *)
 let ocaml_interface grid heuristic =
-(*
-    Array.iter (fun x -> printf "%d " x) grid;
-    printf "\n%d\n" heuristic;
-    "HBGD"
-*)
-    let grid = Grid.create grid in
+    let grid = Grid.create grid (get_heuristic heuristic) in
     solve grid
-
-
-(*
-let ocaml_interface () =
-    print_endline "Hello World"
-*)
 
 let () =
       Callback.register "Ocaml interface" ocaml_interface
-
-(*
-let () =
-    let grid = [| 4; 5; 1; 7; 0; 6; 3; 8; 2; |] in
-(*
-    let grid = [|
-        1; 2; 3;
-        8; 4; 5;
-        7; 6; 0
-        |]
-    in
-*)
-(*
-    let grid = [|
-        1; 6; 0;
-        3; 8; 5;
-        4; 7; 2
-        |]
-    in
-*)
-(*     let grid = [| 0; 4; 1; 8; 3; 2; 6; 7; 5; |] in *)
-    let grid = Grid.create grid in
-    solve grid
-*)

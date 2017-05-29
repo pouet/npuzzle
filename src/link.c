@@ -16,11 +16,7 @@
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
 #include <caml/alloc.h>
-
-#include <caml/mlvalues.h>
 #include <caml/memory.h>
-#include <caml/callback.h>
-#include <caml/printexc.h>
 
 char *c_interface(int *tab, int size, int choice)
 {
@@ -32,8 +28,6 @@ char *c_interface(int *tab, int size, int choice)
 	if (closure_f == NULL) {
 		closure_f = caml_named_value("Ocaml interface");
 	}
-//	caml_callback(*closure_f, Val_unit);
-//  caml_callback(*closure_f, Val_int(42));
 	value toto = caml_alloc(size, size);
 	for (int i = 0; i < size; i++) {
 		Store_field(toto, i, Val_int(tab[i]));
