@@ -295,7 +295,6 @@ if __name__ == "__main__":
 	if is_solvable(puzzle, size) == False:
 		leave('This puzzle can\'t be solved.')
 	res = py_algo(puzzle, choice_h)
-	print res
 	'''Gather the solution from the function solve and set it in the constructor
 	@TODO'''
 	if args.graphics:
