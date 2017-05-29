@@ -32,5 +32,7 @@ $(NAME_SO):
 fclean:
 #	rm -f $(NAME)
 	rm -f $(NAME_SO)
+	rm -f *.cm*
+	rm -f *.o
 
 re: fclean all
