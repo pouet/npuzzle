@@ -149,7 +149,7 @@ struct
 
     let get_goal size =
         let moves = [| (0, 1); (1, 0); (0, -1); (-1, 0); |] in
-        let tab = Array.create size 0 in
+        let tab = Array.make size 0 in
         let w = int_of_float (sqrt (float_of_int size))
         in
 		let rec loop dir n (line, col) =
