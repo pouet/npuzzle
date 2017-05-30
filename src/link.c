@@ -6,7 +6,7 @@
 /*   By: grisbour <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/05/24 15:22:44 by grisbour          #+#    #+#             */
-/*   Updated: 2017/05/29 16:00:28 by grisbour         ###   ########.fr       */
+/*   Updated: 2017/05/30 09:32:28 by grisbour         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,6 @@ char *c_interface(int *tab, int size, int choice)
 	}
 	value res = caml_callback2(*closure_f, toto, Val_int(choice));
 
-	puts(String_val(res));
 	return String_val(res);
 }
 

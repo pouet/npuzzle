@@ -221,14 +221,14 @@ if __name__ == "__main__":
 
 	size = -1
 	parser.add_argument("-f", "--file", type=str, help="The file from which we read the puzzle.")
-	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. Size must be > 3 and <= 7 (Not used if a filename is specified).")
+	parser.add_argument("-s", "--size", type=int, help="Choose the size of the randomly generated puzzle. Size must be == 3 (Not used if a filename is specified).")
 	parser.add_argument("--solvable", action="store_true", default=False, help="Create a solvable puzzle.")
 	parser.add_argument("--unsolvable", action="store_true", default=False, help="Create an unsolvable puzzle.")
 	parser.add_argument("--manhattan", "--m",  action="store_true", default=False, help="Use manhattan distance for heuristic function.")
 	parser.add_argument("--linearconflict", "--lc", action="store_true", default=False, help="Use linear conflict as heuristic function.")
 	parser.add_argument("--euclidean","--e", action="store_true", default=False, help="Use euclidean distance for heuristic function.")
 	parser.add_argument("-g", "--graphics", action="store_true", default=False, help="Create a graphic version of the solution.")
-	parser.add_argument("-o", "--ocaml", action="store_true", default=False, help="Send the puzzle in stdout in ocaml format")
+#	parser.add_argument("-o", "--ocaml", action="store_true", default=False, help="Send the puzzle in stdout in ocaml format")
 
 	args = parser.parse_args()
 	heuristic = 'm'
@@ -257,7 +257,7 @@ if __name__ == "__main__":
 	if args.file == None and args.size == None:
 		leave('Must specify a filename or at least a size to generate a random puzzle.')
 	elif args.file == None and args.size != None:
-		if args.size < 3 or args.size > 7:
+		if args.size != 3:
 			leave('Invalid size for the random generated puzzle.')
 		size = args.size
 		puzzle = gen_puzzle(size, solvable)
@@ -273,8 +273,8 @@ if __name__ == "__main__":
 						leave('Missing size of the puzzle.')
 					elif size == -1 and line.isdigit() == True:
 						size = int(line)
-						if size <= 2:
-							leave('Invalid size.')
+						if size != 3:
+							leave('Invalid size (must be equal to 3).')
 					elif size != -1:
 						split = check_line_size(line, size)
 						'''Means we have reached the maximum number of line and we want to add another'''
@@ -285,13 +285,13 @@ if __name__ == "__main__":
 		if size == -1 or (size != -1 and len(puzzle) != size*size):
 			leave('Missing informations in file.')
 	
-	if args.ocaml:
+	'''	if args.ocaml:
 		string = ''
 		for item in puzzle:
 			string = string + str(item)
 		print "[| " + "; ".join(string)+ "; |]"
-	else:
-		print_puzzle(puzzle, size)
+	else:'''
+	print_puzzle(puzzle, size)
 	if is_solvable(puzzle, size) == False:
 		leave('This puzzle can\'t be solved.')
 	res = py_algo(puzzle, choice_h)
